@@ -194,15 +194,15 @@ class TestVGetAlkisBuildings(TestCase):
         self.assertTrue('AGS' in atr[1],
                         "Module failed, because of missins key 'AGS'")
 
-    def test_filepath_input_single(self):
-        """ tests filepath as input option for federal state(s) information
+    def test_file_input_single(self):
+        """ tests file as input option for federal state(s) information
             single federal state - case
         """
         # single federal state in file
         v_check = SimpleModule("v.alkis.buildings.import",
                                output=self.test_output,
                                aoi_map=self.aoi_map,
-                               filepath=os.path.join('data', 'singleFs'))
+                               file=os.path.join('data', 'singleFs'))
         self.assertModule(v_check,
                           "Module fails, when file-input"
                           "with single federal state given")
@@ -215,15 +215,15 @@ class TestVGetAlkisBuildings(TestCase):
         self.assertTrue('AGS' in atr[1],
                         "Module failed, because of missins key 'AGS'")
 
-    def test_filepath_input_multi(self):
-        """ tests filepath as input option for federal state(s) information
+    def test_file_input_multi(self):
+        """ tests file as input option for federal state(s) information
             multiple federal state - case
         """
         # multiple (two) federal states in file
         v_check = SimpleModule("v.alkis.buildings.import",
                                output=self.test_output,
                                aoi_map=self.aoi_map,
-                               filepath=os.path.join('data', 'multiFs'))
+                               file=os.path.join('data', 'multiFs'))
         self.assertModule(v_check,
                           "Module fails, when file-input"
                           "with multiple federal states given")

@@ -1,8 +1,8 @@
 <h2>DESCRIPTION</h2>
 
-<em>v.alkis.buildings.import</em> downloads ALKIS building data and imports them into GRASS. 
+<em>v.alkis.buildings.import</em> downloads ALKIS building data and imports them into GRASS.
 To download the data, the federal_state(s) of the area of interest has to be given.
-Either given in a text file, comma-separated for multiple federal_states (<b>filepath</b> option).
+Either given in a text file, comma-separated for multiple federal_states (<b>file</b> option).
 Or given directly as input, comma-separated for multiple federal_states (<b>federal_state</b> option).
 
 Note: Importing all data for a complete federal state could fail, due to too
@@ -19,7 +19,7 @@ Implemented federal state options are:
 
 <h2>REQUIREMENTS</h2>
 
-<div class="code"><pre>py7zr</pre></div> needs to be installed. 
+<div class="code"><pre>py7zr</pre></div> needs to be installed.
 
 <h2>EXAMPLE</h2>
 
@@ -29,11 +29,11 @@ Implemented federal state options are:
 v.alkis.buildings.import output=alkis_buildings federal_state=Nordrhein-Westfalen
 </pre></div>
 
-<h3>Load all available ALKIS building data with federal state information given by <b>filepath</b> option</h3>
+<h3>Load all available ALKIS building data with federal state information given by <b>file</b> option</h3>
 
 <div class="code"><pre>
-v.check.bundesland input=polygon_aoi filepath=federal_state.txt
-v.alkis.buildings.import output=alkis_buildings filepath=federal_state.txt
+v.check.bundesland input=polygon_aoi file=federal_state.txt
+v.alkis.buildings.import output=alkis_buildings file=federal_state.txt
 </pre></div>
 
 With file content of <tt>federal_state.txt</tt>:

@@ -40,9 +40,9 @@
 # %end
 
 # %option G_OPT_F_INPUT
-# % key: filepath
+# % key: file
 # % required: no
-# % description: Text file containing federal state to load ALKIS building data for
+# % description: Text file containing comma separated federal states to load ALKIS building data for
 # %end
 
 # %option
@@ -60,11 +60,11 @@
 # %end
 
 # %rules
-# % required: federal_state, filepath
+# % required: federal_state, file
 # %end
 
 # %rules
-# % excludes: filepath, federal_state
+# % excludes: file, federal_state
 # %end
 
 # %rules
@@ -122,7 +122,7 @@ def main():
     """ parser options:
     """
     aoi_map = options['aoi_map']
-    file_federal_state = options['filepath']
+    file_federal_state = options['file']
     load_region = flags['r']
     """ get federal state
     """
@@ -143,9 +143,9 @@ def main():
             else:
                 grass.warning(_(f"Support for {federal_state} is not yet implemented."))
         else:
-            if options['filepath']:
+            if options['file']:
                 grass.fatal(_("Non valid name of federal state,"
-                              " in 'filepath'-option given"))
+                              " in 'file'-option given"))
             elif options['federal_state']:
                 grass.fatal(_("Non valid name of federal state,"
                               " in 'federal_states'-option given"))

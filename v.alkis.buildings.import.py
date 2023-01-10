@@ -80,9 +80,13 @@ import sys
 import atexit
 from io import BytesIO
 import grass.script as grass
-sys.path.insert(1, os.path.join(os.path.dirname(sys.path[0]),
-                                'etc',
-                                'v.alkis.buildings.import'))
+
+sys.path.insert(
+    1,
+    os.path.join(
+        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
+    ),
+)
 from download_urls import URLS, filenames
 
 
@@ -102,17 +106,17 @@ def cleanup():
     if temp_region:
         # set region back and delete saved region:
         grass.run_command("g.region", region=temp_region)
-        grass.run_command("g.remove",
-                          type='region',
-                          name=temp_region,
-                          flags='f',
-                          quiet=True)
+        grass.run_command(
+            "g.remove", type="region", name=temp_region, flags="f", quiet=True
+        )
         # remove temp_output (if aoi_map given)
-        grass.run_command("g.remove",
-                          type='vector',
-                          name=output_alkis_temp,
-                          flags='f',
-                          quiet=True)
+        grass.run_command(
+            "g.remove",
+            type="vector",
+            name=output_alkis_temp,
+            flags="f",
+            quiet=True,
+        )
 
 
 def main():
@@ -120,34 +124,44 @@ def main():
     pid = os.getpid()
     """ parser options:
     """
-    aoi_map = options['aoi_map']
-    file_federal_state = options['file']
-    load_region = flags['r']
+    aoi_map = options["aoi_map"]
+    file_federal_state = options["file"]
+    load_region = flags["r"]
     """ get federal state
     """
     if file_federal_state:
         with open(file_federal_state) as f:
             federal_states = f.read()
     else:
-        federal_states = options['federal_state']
+        federal_states = options["federal_state"]
     """ get URL for corresponding federal state
     """
     URL = None
     fs = None
-    for federal_state in federal_states.split(','):
+    for federal_state in federal_states.split(","):
         if federal_state in URLS:
-            if federal_state in ['Nordrhein-Westfalen', 'Berlin']:
+            if federal_state in ["Nordrhein-Westfalen", "Berlin"]:
                 URL = URLS[federal_state]
                 fs = federal_state
             else:
-                grass.warning(_(f"Support for {federal_state} is not yet implemented."))
+                grass.warning(
+                    _(f"Support for {federal_state} is not yet implemented.")
+                )
         else:
-            if options['file']:
-                grass.fatal(_("Non valid name of federal state,"
-                              " in 'file'-option given"))
-            elif options['federal_state']:
-                grass.fatal(_("Non valid name of federal state,"
-                              " in 'federal_states'-option given"))
+            if options["file"]:
+                grass.fatal(
+                    _(
+                        "Non valid name of federal state,"
+                        " in 'file'-option given"
+                    )
+                )
+            elif options["federal_state"]:
+                grass.fatal(
+                    _(
+                        "Non valid name of federal state,"
+                        " in 'federal_states'-option given"
+                    )
+                )
     # so far, just NRW implemented;
     # in case single federal state given, and not NRW:
     #   skips following part
@@ -155,11 +169,14 @@ def main():
     # in case multiple federal states given, and at least one of them is NRW:
     #   import data only for NRW area
     if not URL:
-        grass.fatal(_("AOI is located in federal state(s),"
-                      "which are not yet implemented."))
+        grass.fatal(
+            _(
+                "AOI is located in federal state(s),"
+                "which are not yet implemented."
+            )
+        )
     if URL:
-        """ load data:
-        """
+        """load data:"""
         # create tempdirectory for unzipping files
         path_to_tempdir = grass.tempdir()
 
@@ -167,20 +184,24 @@ def main():
         filename = filenames[fs]
         alkis_source = os.path.join(path_to_tempdir, filename)
         # final output map
-        output_alkis_temp = f'output_alkis_temp_{pid}'
-        output_alkis = options['output']
+        output_alkis_temp = f"output_alkis_temp_{pid}"
+        output_alkis = options["output"]
         """ download alkis building data
         """
         grass.message(_("Downloading ALKIS building data..."))
         response = requests.get(URL)
         if not response.status_code == 200:
-            sys.exit(("v.alkis.buildings.import was stopped."
-                      "The data are currently not available."))
+            sys.exit(
+                (
+                    "v.alkis.buildings.import was stopped."
+                    "The data are currently not available."
+                )
+            )
         # unzip boundaries
-        if federal_state == 'Nordrhein-Westfalen':
+        if federal_state == "Nordrhein-Westfalen":
             zip_file = zipfile.ZipFile(BytesIO(response.content))
             zip_file.extractall(f"{path_to_tempdir}")
-        elif federal_state == 'Berlin':
+        elif federal_state == "Berlin":
             zip_file = py7zr.SevenZipFile(BytesIO(response.content))
             zip_file.extractall(f"{path_to_tempdir}")
         """ import to GRASS DB
@@ -188,33 +209,38 @@ def main():
         grass.message(_("Importing ALKIS building data..."))
         if aoi_map:
             # region
-            temp_region = f'temp_region_{pid}'
+            temp_region = f"temp_region_{pid}"
             # save current region for setting back later in cleanup
             grass.run_command("g.region", save=temp_region, quiet=True)
             # set region to aoi_map
             grass.run_command("g.region", vector=aoi_map, quiet=True)
-            grass.run_command("v.import",
-                              input=alkis_source,
-                              output=output_alkis_temp,
-                              extent='region',
-                              quiet=True)
-            grass.run_command("v.clip",
-                              input=output_alkis_temp,
-                              clip=aoi_map,
-                              output=output_alkis,
-                              flags='d',
-                              quiet=True)
+            grass.run_command(
+                "v.import",
+                input=alkis_source,
+                output=output_alkis_temp,
+                extent="region",
+                quiet=True,
+            )
+            grass.run_command(
+                "v.clip",
+                input=output_alkis_temp,
+                clip=aoi_map,
+                output=output_alkis,
+                flags="d",
+                quiet=True,
+            )
         elif load_region:
-            grass.run_command("v.import",
-                              input=alkis_source,
-                              output=output_alkis,
-                              extent='region',
-                              quiet=True)
+            grass.run_command(
+                "v.import",
+                input=alkis_source,
+                output=output_alkis,
+                extent="region",
+                quiet=True,
+            )
         else:
-            grass.run_command("v.import",
-                              input=alkis_source,
-                              output=output_alkis,
-                              quiet=True)
+            grass.run_command(
+                "v.import", input=alkis_source, output=output_alkis, quiet=True
+            )
     grass.message(_("Done importing ALKIS building data."))
 
 

@@ -17,4 +17,4 @@ jobs:
         pip3 install black
     - name: Check code style with Black
       run: |
-        black --check --diff .
+        black --check --diff --line-length 79 .

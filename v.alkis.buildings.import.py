@@ -77,7 +77,6 @@ import zipfile
 import py7zr
 import os
 import sys
-import shutil
 import atexit
 from io import BytesIO
 import grass.script as grass

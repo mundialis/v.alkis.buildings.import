@@ -11,11 +11,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: Install apt dependencies
       run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq python-pip
-    - name: Add the bin directory pip uses for executables on PATH
-      run: |
-        echo "::add-path::/home/runner/.local/bin"
+        sudo apt-get update && sudo apt-get install python3 python3-pip -y
     - name: Install pip dependencies
       run: |
         python -m pip install --upgrade pip

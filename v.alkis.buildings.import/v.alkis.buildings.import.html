@@ -5,10 +5,12 @@ To download the data, the federal_state(s) of the area of interest has to be giv
 Either given in a text file, comma-separated for multiple federal_states (<b>filepath</b> option).
 Or given directly as input, comma-separated for multiple federal_states (<b>federal_state</b> option).
 
-Note: Importing all data for a complete federal state could fail, due to too small RAM. To avoid this, the data can be loaded for a smaller region.
-Either by using the <b>aoi_map</b> option, or by using the <b>-r</b> flag.
+Note: Importing all data for a complete federal state could fail, due to too
+small RAM. To avoid this, the data can be loaded for a smaller region, by
+either by using the <b>aoi_map</b> option, or by using the <b>-r</b> flag.
 With <b>aoi_map</b>, the data are imported only for the given vector map (given in GRASS DB).
 With the <b>-r</b> flag, the data are imported only for the current set region.
+<p>
 Implemented federal state options are:
 <ul>
     <li>Berlin</li>
@@ -22,6 +24,7 @@ Implemented federal state options are:
 <h2>EXAMPLE</h2>
 
 <h3>Load all available ALKIS building data with federal state information given by <b>federal_state</b> option</h3>
+
 <div class="code"><pre>
 v.alkis.buildings.import output=alkis_buildings federal_state=Nordrhein-Westfalen
 </pre></div>
@@ -50,7 +53,9 @@ v.alkis.buildings.import output=alkis_buildings federal_state=Nordrhein-Westfale
 <div class="code"><pre>
 v.alkis.buildings.import output=alkis_buildings federal_state=Nordrhein-Westfalen -r
 </pre></div>
+
 <h2>SEE ALSO</h2>
+
 <em>
 <a href="v.import.html">v.import</a>
 </em>

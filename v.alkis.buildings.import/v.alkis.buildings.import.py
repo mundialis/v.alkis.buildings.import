@@ -24,6 +24,8 @@
 # %Module
 # % description: Downloads and imports ALKIS building data (currently only for NRW) into GRASS DB
 # % keyword: vector
+# % keyword: import
+# % keyword: ALKIS
 # %end
 
 # %option G_OPT_V_OUTPUT
@@ -44,6 +46,7 @@
 # %end
 
 # %option
+# % type: string
 # % key: federal_state
 # % multiple: yes
 # % required: no
@@ -95,7 +98,7 @@ def cleanup():
     # remove unzipped federal state data in tempdir-folder
     if path_to_tempdir:
         if os.path.exists(path_to_tempdir):
-            shutil.rmtree(path_to_tempdir)
+            grass.try_rmdir(path_to_tempdir)
     # if aoi_map is given:
     if temp_region:
         # set region back and delete saved region:
@@ -138,7 +141,7 @@ def main():
                 URL = URLS[federal_state]
                 fs = federal_state
             else:
-                grass.warning(_(f"{federal_state} is not yet implemented."))
+                grass.warning(_(f"Support for {federal_state} is not yet implemented."))
         else:
             if options['filepath']:
                 grass.fatal(_("Non valid name of federal state,"

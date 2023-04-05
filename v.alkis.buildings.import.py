@@ -83,7 +83,9 @@ import grass.script as grass
 
 sys.path.insert(
     1,
-    os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
+    os.path.join(
+        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
+    ),
 )
 from download_urls import URLS, filenames
 
@@ -142,11 +144,16 @@ def main():
                 URL = URLS[federal_state]
                 fs = federal_state
             else:
-                grass.warning(_(f"Support for {federal_state} is not yet implemented."))
+                grass.warning(
+                    _(f"Support for {federal_state} is not yet implemented.")
+                )
         else:
             if options["file"]:
                 grass.fatal(
-                    _("Non valid name of federal state," " in 'file'-option given")
+                    _(
+                        "Non valid name of federal state,"
+                        " in 'file'-option given"
+                    )
                 )
             elif options["federal_state"]:
                 grass.fatal(
@@ -163,7 +170,10 @@ def main():
     #   import data only for NRW area
     if not URL:
         grass.fatal(
-            _("AOI is located in federal state(s)," "which are not yet implemented.")
+            _(
+                "AOI is located in federal state(s),"
+                "which are not yet implemented."
+            )
         )
     if URL:
         """load data:"""

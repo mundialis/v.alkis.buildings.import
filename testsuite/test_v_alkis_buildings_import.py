@@ -50,11 +50,15 @@ class TestVGetAlkisBuildings(TestCase):
         self.runModule("v.import", input=self.aoi_map_data, output=self.aoi_map)
         # import vector map to test aoi_map located in multiple federal states
         self.runModule(
-            "v.import", input=self.aoi_map_multi_data, output=self.aoi_map_multi,
+            "v.import",
+            input=self.aoi_map_multi_data,
+            output=self.aoi_map_multi,
         )
         # import vector map to test aoi_map located not only in Germany
         self.runModule(
-            "v.import", input=self.aoi_map_multi_c_data, output=self.aoi_map_multi_c,
+            "v.import",
+            input=self.aoi_map_multi_c_data,
+            output=self.aoi_map_multi_c,
         )
 
     @classmethod
@@ -176,7 +180,8 @@ class TestVGetAlkisBuildings(TestCase):
             file=os.path.join("data", "singleFs"),
         )
         self.assertModule(
-            v_check, "Module fails, when file-input" "with single federal state given",
+            v_check,
+            "Module fails, when file-input" "with single federal state given",
         )
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE

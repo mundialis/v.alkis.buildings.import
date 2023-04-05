@@ -82,7 +82,8 @@ from io import BytesIO
 import grass.script as grass
 
 sys.path.insert(
-    1, os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
+    1,
+    os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
 )
 from download_urls import URLS, filenames
 
@@ -108,7 +109,11 @@ def cleanup():
         )
         # remove temp_output (if aoi_map given)
         grass.run_command(
-            "g.remove", type="vector", name=output_alkis_temp, flags="f", quiet=True,
+            "g.remove",
+            type="vector",
+            name=output_alkis_temp,
+            flags="f",
+            quiet=True,
         )
 
 

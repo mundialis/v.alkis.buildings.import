@@ -37,57 +37,39 @@ class TestVGetAlkisBuildings(TestCase):
     region_map = f"region_map_{pid}"
     aoi_map_multi_data = os.path.join("data", "area_nw_rp.geojson")
     aoi_map_multi = f"aoi_map_multi_{pid}"
-    aoi_map_multi_c_data = os.path.join(
-        "data", "area_germany_netherlands.geojson"
-    )
+    aoi_map_multi_c_data = os.path.join("data", "area_germany_netherlands.geojson")
     aoi_map_multi_c = f"aoi_map_multi_c_{pid}"
 
     @classmethod
     def setUpClass(self):
         """Ensures expected computational region and generated data"""
         # import vector map to set as region
-        self.runModule(
-            "v.import", input=self.region_map_data, output=self.region_map
-        )
+        self.runModule("v.import", input=self.region_map_data, output=self.region_map)
         self.runModule("g.region", vector=self.region_map)
         # import vector map to test aoi_map option
-        self.runModule(
-            "v.import", input=self.aoi_map_data, output=self.aoi_map
-        )
+        self.runModule("v.import", input=self.aoi_map_data, output=self.aoi_map)
         # import vector map to test aoi_map located in multiple federal states
         self.runModule(
-            "v.import",
-            input=self.aoi_map_multi_data,
-            output=self.aoi_map_multi,
+            "v.import", input=self.aoi_map_multi_data, output=self.aoi_map_multi,
         )
         # import vector map to test aoi_map located not only in Germany
         self.runModule(
-            "v.import",
-            input=self.aoi_map_multi_c_data,
-            output=self.aoi_map_multi_c,
+            "v.import", input=self.aoi_map_multi_c_data, output=self.aoi_map_multi_c,
         )
 
     @classmethod
     def tearDownClass(self):
         """Remove the temporary region and generated data"""
-        self.runModule(
-            "g.remove", type="vector", name=self.region_map, flags="f"
-        )
+        self.runModule("g.remove", type="vector", name=self.region_map, flags="f")
         self.runModule("g.remove", type="vector", name=self.aoi_map, flags="f")
-        self.runModule(
-            "g.remove", type="vector", name=self.aoi_map_multi, flags="f"
-        )
-        self.runModule(
-            "g.remove", type="vector", name=self.aoi_map_multi_c, flags="f"
-        )
+        self.runModule("g.remove", type="vector", name=self.aoi_map_multi, flags="f")
+        self.runModule("g.remove", type="vector", name=self.aoi_map_multi_c, flags="f")
 
     def tearDown(self):
         """Remove the outputs created
         This is executed after each test run.
         """
-        self.runModule(
-            "g.remove", type="vector", name=self.test_output, flags="f"
-        )
+        self.runModule("g.remove", type="vector", name=self.test_output, flags="f")
 
     def test_option_aoi_map(self):
         """tests aoi_map as optional input"""
@@ -100,13 +82,9 @@ class TestVGetAlkisBuildings(TestCase):
         self.assertModule(v_check, "Using aoi_map as optional input fails")
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
-        atr_dict = grass.parse_command(
-            "v.info", map=self.test_output, flags="c"
-        )
+        atr_dict = grass.parse_command("v.info", map=self.test_output, flags="c")
         atr = list(atr_dict.keys())
-        self.assertTrue(
-            "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
-        )
+        self.assertTrue("AGS" in atr[1], "Module failed, because of missins key 'AGS'")
 
     def test_option_aoi_map_mutli_fs(self):
         """tests aoi_map as optional input
@@ -120,18 +98,13 @@ class TestVGetAlkisBuildings(TestCase):
         )
         self.assertModule(
             v_check,
-            "Using aoi_map, which is located in"
-            "multiple federal states, fails",
+            "Using aoi_map, which is located in" "multiple federal states, fails",
         )
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
-        atr_dict = grass.parse_command(
-            "v.info", map=self.test_output, flags="c"
-        )
+        atr_dict = grass.parse_command("v.info", map=self.test_output, flags="c")
         atr = list(atr_dict.keys())
-        self.assertTrue(
-            "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
-        )
+        self.assertTrue("AGS" in atr[1], "Module failed, because of missins key 'AGS'")
 
     def test_option_aoi_map_mutli_country(self):
         """tests aoi_map as optional input
@@ -145,18 +118,13 @@ class TestVGetAlkisBuildings(TestCase):
         )
         self.assertModule(
             v_check,
-            "Using aoi_map, which is located in"
-            "in Germany and the Netherlands fails",
+            "Using aoi_map, which is located in" "in Germany and the Netherlands fails",
         )
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
-        atr_dict = grass.parse_command(
-            "v.info", map=self.test_output, flags="c"
-        )
+        atr_dict = grass.parse_command("v.info", map=self.test_output, flags="c")
         atr = list(atr_dict.keys())
-        self.assertTrue(
-            "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
-        )
+        self.assertTrue("AGS" in atr[1], "Module failed, because of missins key 'AGS'")
 
     def test_flag(self):
         """tests -r flag"""
@@ -170,13 +138,9 @@ class TestVGetAlkisBuildings(TestCase):
         self.assertModule(v_check, "Using -r flag fails")
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
-        atr_dict = grass.parse_command(
-            "v.info", map=self.test_output, flags="c"
-        )
+        atr_dict = grass.parse_command("v.info", map=self.test_output, flags="c")
         atr = list(atr_dict.keys())
-        self.assertTrue(
-            "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
-        )
+        self.assertTrue("AGS" in atr[1], "Module failed, because of missins key 'AGS'")
 
     def test_correct_region(self):
         """tests if region is set back correctly"""
@@ -193,18 +157,12 @@ class TestVGetAlkisBuildings(TestCase):
         # region after running module
         region_is = self.runModule("g.region", flags="g")
         # check if current region is expected region
-        self.assertTrue(
-            region_exp == region_is, "Region was modified within addon."
-        )
+        self.assertTrue(region_exp == region_is, "Region was modified within addon.")
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
-        atr_dict = grass.parse_command(
-            "v.info", map=self.test_output, flags="c"
-        )
+        atr_dict = grass.parse_command("v.info", map=self.test_output, flags="c")
         atr = list(atr_dict.keys())
-        self.assertTrue(
-            "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
-        )
+        self.assertTrue("AGS" in atr[1], "Module failed, because of missins key 'AGS'")
 
     def test_file_input_single(self):
         """tests file as input option for federal state(s) information
@@ -218,18 +176,13 @@ class TestVGetAlkisBuildings(TestCase):
             file=os.path.join("data", "singleFs"),
         )
         self.assertModule(
-            v_check,
-            "Module fails, when file-input" "with single federal state given",
+            v_check, "Module fails, when file-input" "with single federal state given",
         )
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
-        atr_dict = grass.parse_command(
-            "v.info", map=self.test_output, flags="c"
-        )
+        atr_dict = grass.parse_command("v.info", map=self.test_output, flags="c")
         atr = list(atr_dict.keys())
-        self.assertTrue(
-            "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
-        )
+        self.assertTrue("AGS" in atr[1], "Module failed, because of missins key 'AGS'")
 
     def test_file_input_multi(self):
         """tests file as input option for federal state(s) information
@@ -244,18 +197,13 @@ class TestVGetAlkisBuildings(TestCase):
         )
         self.assertModule(
             v_check,
-            "Module fails, when file-input"
-            "with multiple federal states given",
+            "Module fails, when file-input" "with multiple federal states given",
         )
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
-        atr_dict = grass.parse_command(
-            "v.info", map=self.test_output, flags="c"
-        )
+        atr_dict = grass.parse_command("v.info", map=self.test_output, flags="c")
         atr = list(atr_dict.keys())
-        self.assertTrue(
-            "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
-        )
+        self.assertTrue("AGS" in atr[1], "Module failed, because of missins key 'AGS'")
 
 
 if __name__ == "__main__":

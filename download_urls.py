@@ -7,7 +7,7 @@ URLS = {
     "Baden-Württemberg": None,
     "Bayern": None,
     "Bremen": None,
-    "Hessen": "https://gds.hessen.de/downloadcenter/20230327/Liegenschaftskataster/Hausumringe%20(shape)/Hausumringe%20Hessen.zip",
+    "Hessen": "https://gds.hessen.de/downloadcenter/DATE/Liegenschaftskataster/Hausumringe%20(shape)/Hausumringe%20Hessen.zip",
     "Hamburg": None,
     "Mecklenburg-Vorpommern": None,
     "Niedersachsen": None,

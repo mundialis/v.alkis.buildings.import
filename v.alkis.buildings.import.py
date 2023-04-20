@@ -80,6 +80,7 @@ import sys
 import atexit
 from io import BytesIO
 import grass.script as grass
+from datetime import datetime
 
 sys.path.insert(
     1,
@@ -142,6 +143,11 @@ def main():
         if federal_state in URLS:
             if federal_state in ["Nordrhein-Westfalen", "Berlin", "Hessen"]:
                 URL = URLS[federal_state]
+                if federal_state == "Hessen":
+                    URL = URL.replace(
+                        "DATE",
+                        datetime.now().strftime("%Y%m%d"),
+                    )
                 fs = federal_state
             else:
                 grass.warning(

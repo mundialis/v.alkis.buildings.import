@@ -6,8 +6,8 @@
 # AUTHOR(S):   Lina Krisztian
 
 # PURPOSE:     Downloads ALKIS building data and imports them into GRASS
-#              (currently only for NRW)
-# COPYRIGHT:   (C) 2022 by mundialis GmbH & Co. KG and the GRASS Development Team
+#              (currently for Berlin, Hessen, NRW)
+# COPYRIGHT:   (C) 2022-2023 by mundialis GmbH & Co. KG and the GRASS Development Team
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 #############################################################################
 
 # %Module
-# % description: Downloads and imports ALKIS building data (currently only for NRW) into GRASS DB
+# % description: Downloads and imports ALKIS building data (currently for Berlin, Hessen, NRW) into GRASS DB
 # % keyword: vector
 # % keyword: import
 # % keyword: ALKIS
@@ -80,6 +80,7 @@ import sys
 import atexit
 from io import BytesIO
 import grass.script as grass
+from datetime import datetime
 
 sys.path.insert(
     1,
@@ -140,8 +141,13 @@ def main():
     fs = None
     for federal_state in federal_states.split(","):
         if federal_state in URLS:
-            if federal_state in ["Nordrhein-Westfalen", "Berlin"]:
+            if federal_state in ["Nordrhein-Westfalen", "Berlin", "Hessen"]:
                 URL = URLS[federal_state]
+                if federal_state == "Hessen":
+                    URL = URL.replace(
+                        "DATE",
+                        datetime.now().strftime("%Y%m%d"),
+                    )
                 fs = federal_state
             else:
                 grass.warning(
@@ -162,7 +168,7 @@ def main():
                         " in 'federal_states'-option given"
                     )
                 )
-    # so far, just NRW implemented;
+    # so far, just Berlin, Hessen and NRW are implemented;
     # in case single federal state given, and not NRW:
     #   skips following part
     #   + grass.message: see above
@@ -198,7 +204,7 @@ def main():
                 )
             )
         # unzip boundaries
-        if federal_state == "Nordrhein-Westfalen":
+        if federal_state == "Nordrhein-Westfalen" or federal_state == "Hessen":
             zip_file = zipfile.ZipFile(BytesIO(response.content))
             zip_file.extractall(f"{path_to_tempdir}")
         elif federal_state == "Berlin":
@@ -219,6 +225,7 @@ def main():
                 input=alkis_source,
                 output=output_alkis_temp,
                 extent="region",
+                flags="o",
                 quiet=True,
             )
             grass.run_command(
@@ -235,11 +242,16 @@ def main():
                 input=alkis_source,
                 output=output_alkis,
                 extent="region",
+                flags="o",
                 quiet=True,
             )
         else:
             grass.run_command(
-                "v.import", input=alkis_source, output=output_alkis, quiet=True
+                "v.import",
+                input=alkis_source,
+                output=output_alkis,
+                flags="o",
+                quiet=True,
             )
     grass.message(_("Done importing ALKIS building data."))
 

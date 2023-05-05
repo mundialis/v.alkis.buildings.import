@@ -225,7 +225,6 @@ def main():
                 input=alkis_source,
                 output=output_alkis_temp,
                 extent="region",
-                flags="o",
                 quiet=True,
             )
             grass.run_command(
@@ -242,7 +241,6 @@ def main():
                 input=alkis_source,
                 output=output_alkis,
                 extent="region",
-                flags="o",
                 quiet=True,
             )
         else:
@@ -250,7 +248,6 @@ def main():
                 "v.import",
                 input=alkis_source,
                 output=output_alkis,
-                flags="o",
                 quiet=True,
             )
     grass.message(_("Done importing ALKIS building data."))

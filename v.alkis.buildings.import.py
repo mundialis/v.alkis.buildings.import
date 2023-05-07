@@ -90,14 +90,10 @@ import grass.script as grass
 
 sys.path.insert(
     1,
-    os.path.join(
-        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
-    ),
+    os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
 )
 from download_urls import URLS, filenames, download_dict, bb_layer
 
-
-rm_vec = [] #WIRD GARNICHT DEFINIERT ODER IM CLEANUP BERÜCKSICHTIGT
 path_to_tempdir = None
 temp_region = None
 output_alkis_temp = None
@@ -135,7 +131,6 @@ def cleanup():
 
 
 def url_response(url):
-
     filename_start_pos = url.rfind("/") + 1
     filename = url[filename_start_pos:]
 
@@ -150,7 +145,7 @@ def url_response(url):
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             trydownload = False
-        except:
+        except Exception:
             grass.message(_("retry download"))
             if count > 10:
                 trydownload = False
@@ -158,8 +153,9 @@ def url_response(url):
             sleep(10)
     return url
 
+
 def main():
-    global rm_vec, path_to_tempdir, temp_region, output_alkis_temp, pid
+    global path_to_tempdir, temp_region, output_alkis_temp, pid
     pid = os.getpid()
     """ parser options:
     """
@@ -183,19 +179,14 @@ def main():
                 URL = URLS[federal_state]
                 fs = federal_state
             elif federal_state == "Brandenburg":
-                fs =federal_state
+                fs = federal_state
                 URL = URLS[federal_state]
             else:
-                grass.warning(
-                    _(f"Support for {federal_state} is not yet implemented.")
-                )
+                grass.warning(_(f"Support for {federal_state} is not yet implemented."))
         else:
             if options["file"]:
                 grass.fatal(
-                    _(
-                        "Non valid name of federal state,"
-                        " in 'file'-option given"
-                    )
+                    _("Non valid name of federal state," " in 'file'-option given")
                 )
             elif options["federal_state"]:
                 grass.fatal(
@@ -214,16 +205,9 @@ def main():
         if fs:
             """calculate Brandenburg buildings with Alkis usetypes"""
 
-            global currentpath, rmvecmaps, downloadpath, dldir
-            filepath = file_federal_state
+            global currentpath, rmvecmaps
             output = "output_alkis_usetype_buildings_BB"
-            #dldir = gleicher_path_wie hier
 
-            '''
-            if dldir is None or dldir == "":
-                dldir = grass.tempdir()
-                downloadpath = dldir
-            '''
             grass.run_command("g.region", vector=aoi_map)
 
             all_urls_bl = download_dict["Brandenburg"]
@@ -256,7 +240,7 @@ def main():
                 os.remove(zip_file2)
             grass.message(_("unzip gzip folder"))
 
-               # convert NAS .xml files to one single GPKG with OGR library
+            # convert NAS .xml files to one single GPKG with OGR library
             grass.message(_("convert NAS .xml files to a single GPKG with OGR library"))
             xml_files = glob.glob("**/*.xml", recursive=True)
             epsg = grass.parse_command("g.proj", flags="g")["srid"]
@@ -299,7 +283,9 @@ def main():
 
             stdout = process.communicate()[0].decode("utf-8").strip()
 
-            layernames_in_file = [layername for layername in layernames if layername in stdout]
+            layernames_in_file = [
+                layername for layername in layernames if layername in stdout
+            ]
 
             # import gpkg file as seperate vectormaps for every layer
             vectormaps = []
@@ -337,7 +323,9 @@ def main():
                 vinfo_output = grass.read_command("v.info", map=vectormap, flags="c")
 
                 column_list = [
-                    line.split()[0] for line in vinfo_output.splitlines() if line.strip()
+                    line.split()[0]
+                    for line in vinfo_output.splitlines()
+                    if line.strip()
                 ]
 
                 # Filter the column list to exclude the 'objektart', 'id' and 'name' columns
@@ -362,7 +350,9 @@ def main():
                 column_names = ",".join(colname_list_filtered)
 
                 # Call v.db.drop command with the filtered column names
-                grass.run_command("v.db.dropcolumn", map=vectormap, columns=column_names)
+                grass.run_command(
+                    "v.db.dropcolumn", map=vectormap, columns=column_names
+                )
 
                 grass.message(f"Importing {nutzungsart} done.")
 
@@ -371,7 +361,6 @@ def main():
             grass.run_command(
                 "v.patch", input=vectormaps, output=output, flags="e", quiet=True
             )
-
 
         if not fs:
             grass.fatal(
@@ -454,8 +443,6 @@ def main():
                 quiet=True,
             )
     grass.message(_("Done importing ALKIS building data."))
-
-    
 
 
 if __name__ == "__main__":

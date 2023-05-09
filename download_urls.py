@@ -37,3 +37,50 @@ filenames = {
     "Sachsen": None,
     "Sachsen-Anhalt": None,
 }
+
+BB_districts = {
+    "BAR": "Barnim",
+    "BRB": "Brandenburg an der Havel",
+    "CB": "Cottbus",
+    "EE": "Elbe-Elster",
+    "FF": "Frankfurt (Oder)",
+    "HVL": "Havelland",
+    "LDS": "Dahme-Spreewald",
+    "LOS": "Oder-Spree",
+    "MOL": "Märkisch-Oderland",
+    "OHV": "Oberhavel",
+    "OPR": "Ostprignitz-Ruppin",
+    "OSL": "Oberspreewald-Lausitz",
+    "P": "Potsdam",
+    "PM": "Potsdam-Mittelmark",
+    "PR": "Prignitz",
+    "SPN": "Spree-Neiße",
+    "TF": "Teltow-Fläming",
+    "UM": "Uckermark",
+}
+
+bb_base_url = (
+    "https://data.geobasis-bb.de/geobasis/daten/alkis/Vektordaten/shape/"
+)
+download_dict = {
+    "Brandenburg": [
+        f"{bb_base_url}ALKIS_Shape_BAR.zip",
+        f"{bb_base_url}ALKIS_Shape_BRB.zip",
+        f"{bb_base_url}ALKIS_Shape_CB.zip",
+        f"{bb_base_url}ALKIS_Shape_EE.zip",
+        f"{bb_base_url}ALKIS_Shape_FF.zip",
+        f"{bb_base_url}ALKIS_Shape_HVL.zip",
+        f"{bb_base_url}ALKIS_Shape_LDS.zip",
+        f"{bb_base_url}ALKIS_Shape_LOS.zip",
+        f"{bb_base_url}ALKIS_Shape_MOL.zip",
+        f"{bb_base_url}ALKIS_Shape_OHV.zip",
+        f"{bb_base_url}ALKIS_Shape_OPR.zip",
+        f"{bb_base_url}ALKIS_Shape_OSL.zip",
+        f"{bb_base_url}ALKIS_Shape_P.zip",
+        f"{bb_base_url}ALKIS_Shape_PM.zip",
+        f"{bb_base_url}ALKIS_Shape_PR.zip",
+        f"{bb_base_url}ALKIS_Shape_SPN.zip",
+        f"{bb_base_url}ALKIS_Shape_TF.zip",
+        f"{bb_base_url}ALKIS_Shape_UM.zip",
+    ],
+}

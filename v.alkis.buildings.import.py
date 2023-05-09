@@ -103,7 +103,9 @@ from datetime import datetime
 
 sys.path.insert(
     1,
-    os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
+    os.path.join(
+        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
+    ),
 )
 from download_urls import URLS, filenames, BB_districts, download_dict
 
@@ -124,7 +126,12 @@ def cleanup():
         # set region back and delete saved region:
         grass.run_command("g.region", region=orig_region)
         grass.run_command(
-            "g.remove", type="region", name=orig_region, flags="f", quiet=True, stderr=nulldev
+            "g.remove",
+            type="region",
+            name=orig_region,
+            flags="f",
+            quiet=True,
+            stderr=nulldev,
         )
         # remove temp_output (if aoi_map given)
         grass.run_command(
@@ -137,7 +144,12 @@ def cleanup():
         )
     for rm_v in rmvecmaps:
         grass.run_command(
-            "g.remove", flags="f", type="vector", name=rm_v, quiet=True, stderr=nulldev
+            "g.remove",
+            flags="f",
+            type="vector",
+            name=rm_v,
+            quiet=True,
+            stderr=nulldev,
         )
     if not flags["d"]:
         shutil.rmtree(dldir)
@@ -295,7 +307,9 @@ def download_brandenburg(aoi_map):
     return shp_files
 
 
-def import_single_alkis_source(alkis_source, aoi_map, load_region, output_alkis, fs):
+def import_single_alkis_source(
+    alkis_source, aoi_map, load_region, output_alkis, fs
+):
     """Importing singel ALKIS source"""
     flags = ""
     if fs == "Hessen":
@@ -394,7 +408,15 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None):
         drop_columns = [
             el
             for el in column_list
-            if el not in ["cat", "aktualit", "gebnutzbez", "funktion", "anzahlgs", "lagebeztxt"]
+            if el
+            not in [
+                "cat",
+                "aktualit",
+                "gebnutzbez",
+                "funktion",
+                "anzahlgs",
+                "lagebeztxt",
+            ]
         ]
         grass.run_command(
             "v.db.dropcolumn",
@@ -474,11 +496,16 @@ def main():
                 fs = federal_state
                 URL = URLS[federal_state]
             else:
-                grass.warning(_(f"Support for {federal_state} is not yet implemented."))
+                grass.warning(
+                    _(f"Support for {federal_state} is not yet implemented.")
+                )
         else:
             if options["file"]:
                 grass.fatal(
-                    _("Non valid name of federal state," " in 'file'-option given")
+                    _(
+                        "Non valid name of federal state,"
+                        " in 'file'-option given"
+                    )
                 )
             elif options["federal_state"]:
                 grass.fatal(
@@ -504,8 +531,7 @@ def main():
         )
 
     if URL:
-        """ download alkis building data
-        """
+        """download alkis building data"""
         # create tempdirectory for unzipping files
         # file of interest in zip
         filename = filenames[fs]

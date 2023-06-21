@@ -99,6 +99,7 @@ import shutil
 import grass.script as grass
 from multiprocessing.pool import ThreadPool
 from datetime import datetime
+from datetime import timedelta
 
 
 sys.path.insert(
@@ -177,7 +178,6 @@ def url_response(url):
                 grass.fatal(f"download of {url} not working")
             sleep(10)
     return url
-
 
 def administrative_boundaries(polygon_name):
     # # # returns list of districts, for AOI/region
@@ -538,7 +538,38 @@ def main():
         alkis_source = os.path.join(dldir, filename)
         if not os.path.isfile(alkis_source):
             grass.message(_("Downloading ALKIS building data..."))
-            response = requests.get(URL)
+            if federal_state == "Hessen":
+                # insert current date into download URL
+                # try dates of yesterday and tomorrow if its not working
+                today = datetime.now().strftime("%Y%m%d")
+                yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
+                tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+                dates = [today, yesterday, tomorrow]
+                URL = URL.replace("DATE", today)
+                trydownload = True
+                count = 0
+                count_date = 0
+                while trydownload:
+                    try:
+                        count += 1
+                        response = requests.get(URL)
+                        trydownload = False
+                    except:
+                        # retry download 10 times
+                        grass.message( ("retry download"))
+                        if count > 10:
+                            count = 0
+                            count_date += 1
+                            grass.message(
+                                f"Using {dates[count_date]} as date for Hessen Download URL"
+                            )
+                            URL = URL.replace(dates[count_date - 1], dates[count_date])
+                            if count_date >= 3:
+                                trydownload = False
+                                grass.fatal("Download of Hessen ALKIS buildings failed!")
+                        sleep(10)
+            else:
+                response = requests.get(URL)
             if not response.status_code == 200:
                 sys.exit(
                     (

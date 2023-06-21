@@ -104,9 +104,7 @@ from datetime import timedelta
 
 sys.path.insert(
     1,
-    os.path.join(
-        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
-    ),
+    os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
 )
 from download_urls import URLS, filenames, BB_districts, download_dict
 
@@ -178,6 +176,7 @@ def url_response(url):
                 grass.fatal(f"download of {url} not working")
             sleep(10)
     return url
+
 
 def administrative_boundaries(polygon_name):
     # # # returns list of districts, for AOI/region
@@ -261,18 +260,14 @@ def download_brandenburg(aoi_map):
         for key, val in BB_districts.items():
             if val == KRS:
                 kbs_url = [
-                    url
-                    for url in all_urls_bl
-                    if f"ALKIS_Shape_{key}.zip" in url
+                    url for url in all_urls_bl if f"ALKIS_Shape_{key}.zip" in url
                 ][0]
                 kbs_zip = os.path.basename(kbs_url)
                 kbs_zips.append(kbs_zip)
                 if not os.path.isfile(os.path.join(dldir, kbs_zip)):
                     filtered_urls.append(kbs_url)
 
-    grass.message(
-        _(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}...")
-    )
+    grass.message(_(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}..."))
     os.chdir(dldir)
     pool = ThreadPool(3)
     results = pool.imap_unordered(url_response, filtered_urls)
@@ -307,9 +302,7 @@ def download_brandenburg(aoi_map):
     return shp_files
 
 
-def import_single_alkis_source(
-    alkis_source, aoi_map, load_region, output_alkis, fs
-):
+def import_single_alkis_source(alkis_source, aoi_map, load_region, output_alkis, fs):
     """Importing singel ALKIS source"""
     flags = ""
     if fs == "Hessen":
@@ -462,9 +455,7 @@ def main():
         dldir = grass.tempdir()
     else:
         if not os.path.exists(dldir):
-            grass.message(
-                _(f"Download folder {dldir} does not exist. Creating it")
-            )
+            grass.message(_(f"Download folder {dldir} does not exist. Creating it"))
             os.makedirs(dldir)
 
     # get federal state
@@ -496,16 +487,11 @@ def main():
                 fs = federal_state
                 URL = URLS[federal_state]
             else:
-                grass.warning(
-                    _(f"Support for {federal_state} is not yet implemented.")
-                )
+                grass.warning(_(f"Support for {federal_state} is not yet implemented."))
         else:
             if options["file"]:
                 grass.fatal(
-                    _(
-                        "Non valid name of federal state,"
-                        " in 'file'-option given"
-                    )
+                    _("Non valid name of federal state," " in 'file'-option given")
                 )
             elif options["federal_state"]:
                 grass.fatal(
@@ -524,10 +510,7 @@ def main():
         alkis_source = download_brandenburg(aoi_map)
     elif not URL and not fs:
         grass.fatal(
-            _(
-                "AOI is located in federal state(s),"
-                "which are not yet implemented."
-            )
+            _("AOI is located in federal state(s)," "which are not yet implemented.")
         )
 
     if URL:
@@ -554,9 +537,9 @@ def main():
                         count += 1
                         response = requests.get(URL)
                         trydownload = False
-                    except:
+                    except Exception:
                         # retry download 10 times
-                        grass.message( ("retry download"))
+                        grass.message(_("retry download"))
                         if count > 10:
                             count = 0
                             count_date += 1
@@ -566,7 +549,9 @@ def main():
                             URL = URL.replace(dates[count_date - 1], dates[count_date])
                             if count_date >= 3:
                                 trydownload = False
-                                grass.fatal("Download of Hessen ALKIS buildings failed!")
+                                grass.fatal(
+                                    "Download of Hessen ALKIS buildings failed!"
+                                )
                         sleep(10)
             else:
                 response = requests.get(URL)

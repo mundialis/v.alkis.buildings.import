@@ -99,6 +99,7 @@ import shutil
 import grass.script as grass
 from multiprocessing.pool import ThreadPool
 from datetime import datetime
+from datetime import timedelta
 
 
 sys.path.insert(
@@ -487,11 +488,6 @@ def main():
             if federal_state in ["Nordrhein-Westfalen", "Berlin", "Hessen"]:
                 URL = URLS[federal_state]
                 fs = federal_state
-                if federal_state == "Hessen":
-                    URL = URL.replace(
-                        "DATE",
-                        datetime.now().strftime("%Y%m%d"),
-                    )
             elif federal_state == "Brandenburg":
                 fs = federal_state
                 URL = URLS[federal_state]
@@ -538,7 +534,28 @@ def main():
         alkis_source = os.path.join(dldir, filename)
         if not os.path.isfile(alkis_source):
             grass.message(_("Downloading ALKIS building data..."))
-            response = requests.get(URL)
+            if federal_state == "Hessen":
+                # insert current date into download URL
+                # try dates of yesterday and tomorrow if its not working
+                today = datetime.now().strftime("%Y%m%d")
+                yesterday = (datetime.now() - timedelta(days=1)).strftime(
+                    "%Y%m%d"
+                )
+                tomorrow = (datetime.now() + timedelta(days=1)).strftime(
+                    "%Y%m%d"
+                )
+                dates = [today, yesterday, tomorrow]
+                URL = URL.replace("DATE", today)
+                response = requests.get(URL)
+                if not response.status_code == 200:
+                    URL = URL.replace(dates[0], dates[1])
+                    response = requests.get(URL)
+                if not response.status_code == 200:
+                    URL = URL.replace(dates[1], dates[2])
+                    response = requests.get(URL)
+            else:
+                response = requests.get(URL)
+
             if not response.status_code == 200:
                 sys.exit(
                     (

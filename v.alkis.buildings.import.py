@@ -488,11 +488,6 @@ def main():
             if federal_state in ["Nordrhein-Westfalen", "Berlin", "Hessen"]:
                 URL = URLS[federal_state]
                 fs = federal_state
-                if federal_state == "Hessen":
-                    URL = URL.replace(
-                        "DATE",
-                        datetime.now().strftime("%Y%m%d"),
-                    )
             elif federal_state == "Brandenburg":
                 fs = federal_state
                 URL = URLS[federal_state]

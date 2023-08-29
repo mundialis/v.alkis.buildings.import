@@ -52,7 +52,7 @@
 # % multiple: yes
 # % required: no
 # % description: Federal state to load ALKIS building data for
-# % options: Brandenburg,Berlin,Baden-Württemberg,Bayern,Bremen,Hessen,Hamburg,Mecklenburg-Vorpommern,Niedersachsen,Nordrhein-Westfalen,Rheinland-Pfalz,Schleswig-Holstein,Saarland,Sachsen,Sachsen-Anhalt
+# % options: Brandenburg,Berlin,Baden-Württemberg,Bayern,Bremen,Hessen,Hamburg,Mecklenburg-Vorpommern,Niedersachsen,Nordrhein-Westfalen,Rheinland-Pfalz,Schleswig-Holstein,Saarland,Sachsen,Sachsen-Anhalt,Thüringen
 # %end
 
 # %option
@@ -100,6 +100,7 @@ import grass.script as grass
 from multiprocessing.pool import ThreadPool
 from datetime import datetime
 from datetime import timedelta
+from subprocess import Popen, PIPE
 
 
 sys.path.insert(
@@ -311,21 +312,103 @@ def download_brandenburg(aoi_map):
 def import_single_alkis_source(
     alkis_source, aoi_map, load_region, output_alkis, fs
 ):
-    """Importing singel ALKIS source"""
+    """Importing single ALKIS source"""
     flags = ""
     if fs == "Hessen":
         flags = "o"
     if aoi_map:
         # set region to aoi_map
         grass.run_command("g.region", vector=aoi_map, quiet=True)
-        grass.run_command(
-            "v.import",
-            input=alkis_source,
-            output=output_alkis_temp,
-            extent="region",
-            flags=flags,
-            quiet=True,
-        )
+        grass.message(f"alkis_source: {alkis_source}")
+        if fs == "Thüringen":
+            # parse CRS of current location
+            proj_location = grass.parse_command("g.proj", flags="g")["srid"]
+            # change CRS of alkis_source vector data from epsg:4647 to proj_location
+            alkis_source_proj = alkis_source[:-4] + "_proj.gpkg"
+            ps = grass.Popen((
+                    "ogr2ogr",
+                    "-s_srs",
+                    "EPSG:4647",
+                    "-t_srs",
+                    proj_location,
+                    "-f", "GPKG",
+                    alkis_source_proj,
+                    alkis_source
+                ))
+            returncode = ps.wait()
+            if returncode != 0:
+                grass.message(_("Assigning new CRS to ALKIS input data failed!"))
+            # while schleife bis 0.001 abhängig von features, die silver polygone sind
+            # run v.in.ogr with snap tolerance to identify silver polygons
+            # if there are silver polygons remove them
+            snap = 0.00000001
+            read_out = grass.read_command(
+                "v.in.ogr",
+                input=alkis_source_proj,
+                output=output_alkis_temp,
+                snap=snap,
+                flags="r",
+                verbose=True,
+                quiet=True,
+            )
+            import pdb; pdb.set_trace()
+            # overlap_areas = int((str(grass.parse_command(
+                # "v.in.ogr",
+                # input=alkis_source_proj,
+                # output=output_alkis_temp,
+                # snap=snap,
+                # flags="r",
+                # verbose=True,
+                # quiet=True,
+            #     )["Überlappende Fläche"]).split("(")[1].split(" ")[0]))
+            parse_args = ["v.in.ogr", f"input={alkis_source_proj}", f"output={output_alkis_temp}", f"snap={snap}", "-r", "--verbose", "--quiet"]
+            process = Popen(parse_args, stdout=PIPE, stderr=PIPE)
+            stdout = process.communicate()[0].decode("utf-8").strip()
+            if overlap_areas > 0:
+                snap = snap * 10
+                # run command until snap tolerance is 0.001
+                while snap > 0.01:
+                    grass.run_command(
+                        "v.in.ogr",
+                        input=alkis_source_proj,
+                        output=output_alkis_temp,
+                        snap=snap,
+                        flags="r",
+                        overwrite=True,
+                        verbose=True,
+                        quiet=True,
+                    )
+                    snap = snap * 10
+                # find amount of silver polygons if still existent
+                overlap_areas = int((str(grass.parse_command(
+                    "v.in.ogr",
+                    input=alkis_source_proj,
+                    output=output_alkis_temp,
+                    snap=snap,
+                    flags="r",
+                    verbose=True,
+                    quiet=True,
+                    )["Überlappende Fläche"]).split("(")[1].split(" ")[0]))
+                # if there are still silver polygons remove them with runnging v.clean
+                if overlap_areas > 0:
+                    grass.run_command(
+                        "v.clean",
+                        input=output_alkis_temp,
+                        output=output_alkis_temp,
+                        tool="rmarea",
+                        threshold=1,
+                        overwrite=True,
+                        quiet=True,
+                    )
+        else:
+            grass.run_command(
+                "v.import",
+                input=alkis_source,
+                output=output_alkis_temp,
+                extent="region",
+                flags=flags,
+                quiet=True,
+            )
         grass.run_command(
             "v.clip",
             input=output_alkis_temp,
@@ -464,7 +547,7 @@ def main():
     else:
         if not os.path.exists(dldir):
             grass.message(
-                _(f"Download folder {dldir} does not exist. Creating it")
+                _(f"Download folder {dldir} does not exist. Creating it...")
             )
             os.makedirs(dldir)
 
@@ -485,7 +568,7 @@ def main():
     fs = None
     for federal_state in federal_states.split(","):
         if federal_state in URLS:
-            if federal_state in ["Nordrhein-Westfalen", "Berlin", "Hessen"]:
+            if federal_state in ["Nordrhein-Westfalen", "Berlin", "Hessen", "Thüringen"]:
                 URL = URLS[federal_state]
                 fs = federal_state
             elif federal_state == "Brandenburg":
@@ -564,7 +647,7 @@ def main():
                     )
                 )
             # unzip boundaries
-            if federal_state in ["Nordrhein-Westfalen", "Hessen"]:
+            if federal_state in ["Nordrhein-Westfalen", "Hessen", "Thüringen"]:
                 zip_file = zipfile.ZipFile(BytesIO(response.content))
                 zip_file.extractall(dldir)
             elif federal_state == "Berlin":

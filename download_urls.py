@@ -18,6 +18,7 @@ URLS = {
     "Saarland": None,
     "Sachsen": None,
     "Sachsen-Anhalt": None,
+    "Thüringen": "https://geoportal.geoportal-th.de/hausko_umr/HU-TH.zip",
 }
 
 filenames = {
@@ -36,6 +37,7 @@ filenames = {
     "Saarland": None,
     "Sachsen": None,
     "Sachsen-Anhalt": None,
+    "Thüringen": "gebaeude-th.shp"
 }
 
 BB_districts = {

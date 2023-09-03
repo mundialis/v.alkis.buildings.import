@@ -100,7 +100,6 @@ from datetime import timedelta
 import grass.script as grass
 import py7zr
 import requests
-from download_urls import URLS, filenames, BB_districts, download_dict
 
 sys.path.insert(
     1,
@@ -108,6 +107,8 @@ sys.path.insert(
         os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
     ),
 )
+# pylint: disable=wrong-import-position
+from download_urls import URLS, filenames, BB_districts, download_dict
 
 ORIG_REGION = None
 OUTPUT_ALKIS_TEMP = None

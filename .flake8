@@ -1,5 +1,9 @@
 [flake8]
 
+# Permitted exceptions:
+# E402 module level import not at top of file
+# E501 line too long (161 > 150 characters)
+# F821 undefined name '_'
 
 per-file-ignores =
   ./v.alkis.buildings.import.py: E501, E402, F821

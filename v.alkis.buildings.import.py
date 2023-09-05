@@ -313,18 +313,19 @@ def import_single_alkis_source(
     alkis_source, aoi_map, load_region, output_alkis, f_state
 ):
     """Importing single ALKIS source"""
-    flags = ""
-    if f_state == "Hessen":
-        flags = "o"
+    # flags = ""
+    # if f_state == "Hessen":
+    #     flags = "o"
     if aoi_map:
         # set region to aoi_map
         grass.run_command("g.region", vector=aoi_map, quiet=True)
-        grass.message(f"alkis_source: {alkis_source}")
         if f_state == "Thüringen":
             # parse CRS of current location
             proj_location = grass.parse_command("g.proj", flags="g")["srid"]
-            # change CRS of alkis_source vector data
+            proj_location = "EPSG:25832"
+            # change CRS of alkis_source vector data of TH
             # from epsg:4647 to proj_location
+            # assign CRS to alkis_source vector data of HE
             alkis_source_proj = alkis_source[:-4] + "_proj.gpkg"
             popen_s = grass.Popen(
                 (
@@ -363,7 +364,7 @@ def import_single_alkis_source(
                 input=alkis_source,
                 output=OUTPUT_ALKIS_TEMP,
                 extent="region",
-                flags=flags,
+                # flags=flags,
                 quiet=True,
             )
         grass.run_command(
@@ -430,8 +431,8 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None):
     out_tempall = list()
     for shape_file in shape_files:
         grass.message(_(f"Importing {shape_file}"))
-        out_temp = f"out_temp_{PID}_"
-        "{os.path.splitext(os.path.basename(shape_file))[0]}"
+        out_temp = f"""out_temp_{PID}_
+        {os.path.splitext(os.path.basename(shape_file))[0]}"""
         rmvecmaps.append(out_temp)
         grass.run_command(
             "v.import",
@@ -495,7 +496,7 @@ def main():
     aoi_map = options["aoi_map"]
     file_federal_state = options["file"]
     load_region = flags["r"]
-    DLDIR = options["DLDIR"]
+    DLDIR = options["dldir"]
     OUTPUT_ALKIS_TEMP = f"OUTPUT_ALKIS_TEMP_{PID}"
     rmvecmaps.append(OUTPUT_ALKIS_TEMP)
     output_alkis = options["output"]
@@ -525,6 +526,9 @@ def main():
     # get URL for corresponding federal state
     url = None
     f_state = None
+    # prevent error caused by "\n" in federal states input file
+    if "\n" in federal_states:
+        federal_states = federal_states[:-1]
     for federal_state in federal_states.split(","):
         if federal_state in URLS:
             if federal_state in [

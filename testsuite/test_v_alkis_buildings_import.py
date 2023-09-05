@@ -37,7 +37,7 @@ class TestVGetAlkisBuildings(TestCase):
     test_output = f"test_output_{pid}"
     region_map_data = os.path.join("data", "area_cologne.geojson")
     region_map = f"region_map_{pid}"
-    aoi_map_multi_data = os.path.join("data", "area_nw_rp.geojson")
+    aoi_map_multi_data = os.path.join("data", "area_nw_he.geojson")
     aoi_map_multi = f"aoi_map_multi_{pid}"
     aoi_map_multi_c_data = os.path.join(
         "data", "area_germany_netherlands.geojson"
@@ -111,14 +111,14 @@ class TestVGetAlkisBuildings(TestCase):
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
         )
 
-    def test_option_aoi_map_mutli_fs(self):
+    def test_option_aoi_map_multi_fs(self):
         """tests aoi_map as optional input
         with aoi located in multiple federal states
         """
         v_check = SimpleModule(
             "v.alkis.buildings.import",
             output=self.test_output,
-            federal_state=["Nordrhein-Westfalen", "Rheinland-Pfalz"],
+            federal_state=["Nordrhein-Westfalen", "Hessen"],
             aoi_map=self.aoi_map_multi,
         )
         self.assertModule(
@@ -136,7 +136,7 @@ class TestVGetAlkisBuildings(TestCase):
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
         )
 
-    def test_option_aoi_map_mutli_country(self):
+    def test_option_aoi_map_multi_country(self):
         """tests aoi_map as optional input
         with aoi located only partly in Germany
         """
@@ -218,7 +218,7 @@ class TestVGetAlkisBuildings(TestCase):
             "v.alkis.buildings.import",
             output=self.test_output,
             aoi_map=self.aoi_map,
-            file=os.path.join("data", "singleFs"),
+            file=os.path.join("data", "singleFs.txt"),
         )
         self.assertModule(
             v_check,
@@ -242,8 +242,8 @@ class TestVGetAlkisBuildings(TestCase):
         v_check = SimpleModule(
             "v.alkis.buildings.import",
             output=self.test_output,
-            aoi_map=self.aoi_map,
-            file=os.path.join("data", "multiFs"),
+            aoi_map=self.aoi_map_multi,
+            file=os.path.join("data", "multiFs.txt"),
         )
         self.assertModule(
             v_check,

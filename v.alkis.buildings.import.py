@@ -3,7 +3,7 @@
 ############################################################################
 #
 # MODULE:      v.alkis.buildings.import
-# AUTHOR(S):   Lina Krisztian, Anika Weinmann
+# AUTHOR(S):   Lina Krisztian, Anika Weinmann, Johannes Halbauer
 
 # PURPOSE:     Downloads ALKIS building data and imports them into GRASS
 #              (currently for Berlin, Hessen, NRW)
@@ -381,7 +381,7 @@ def import_single_alkis_source(
             input=alkis_source,
             output=output_alkis,
             extent="region",
-            flags=flags,
+            # flags=flags,
             quiet=True,
         )
     else:
@@ -536,6 +536,7 @@ def main():
                 "Berlin",
                 "Hessen",
                 "Thüringen",
+                "Sachsen",
             ]:
                 url = URLS[federal_state]
                 f_state = federal_state
@@ -615,7 +616,12 @@ def main():
                     )
                 )
             # unzip boundaries
-            if federal_state in ["Nordrhein-Westfalen", "Hessen", "Thüringen"]:
+            if federal_state in [
+                "Nordrhein-Westfalen",
+                "Hessen",
+                "Thüringen",
+                "Sachsen",
+            ]:
                 zip_file = zipfile.ZipFile(BytesIO(response.content))
                 zip_file.extractall(DLDIR)
             elif federal_state == "Berlin":

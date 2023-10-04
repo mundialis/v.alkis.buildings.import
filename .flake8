@@ -6,7 +6,7 @@
 # F821 undefined name '_'
 
 per-file-ignores =
-  ./v.alkis.buildings.import.py: E501, E402, F821
+  ./v.alkis.buildings.import.py: E501, E402, F821, E231
   ./testsuite/test_v_alkis_buildings_import.py: E501
 
 max-line-length = 80

@@ -29,13 +29,15 @@ import grass.script as grass
 
 
 class TestVGetAlkisBuildings(TestCase):
+    """tests functionality of v.alkis.buildings.import.py"""
+
     pid = os.getpid()
     aoi_map_data = os.path.join("data", "area_beuel.geojson")
     aoi_map = f"aoi_map_{pid}"
     test_output = f"test_output_{pid}"
     region_map_data = os.path.join("data", "area_cologne.geojson")
     region_map = f"region_map_{pid}"
-    aoi_map_multi_data = os.path.join("data", "area_nw_rp.geojson")
+    aoi_map_multi_data = os.path.join("data", "area_nw_he.geojson")
     aoi_map_multi = f"aoi_map_multi_{pid}"
     aoi_map_multi_c_data = os.path.join(
         "data", "area_germany_netherlands.geojson"
@@ -43,44 +45,45 @@ class TestVGetAlkisBuildings(TestCase):
     aoi_map_multi_c = f"aoi_map_multi_c_{pid}"
 
     @classmethod
-    def setUpClass(self):
+    # pylint: disable=invalid-name
+    def setUpClass(cls):
         """Ensures expected computational region and generated data"""
         # import vector map to set as region
-        self.runModule(
-            "v.import", input=self.region_map_data, output=self.region_map
+        cls.runModule(
+            "v.import", input=cls.region_map_data, output=cls.region_map
         )
-        self.runModule("g.region", vector=self.region_map)
+        cls.runModule("g.region", vector=cls.region_map)
         # import vector map to test aoi_map option
-        self.runModule(
-            "v.import", input=self.aoi_map_data, output=self.aoi_map
-        )
+        cls.runModule("v.import", input=cls.aoi_map_data, output=cls.aoi_map)
         # import vector map to test aoi_map located in multiple federal states
-        self.runModule(
+        cls.runModule(
             "v.import",
-            input=self.aoi_map_multi_data,
-            output=self.aoi_map_multi,
+            input=cls.aoi_map_multi_data,
+            output=cls.aoi_map_multi,
         )
         # import vector map to test aoi_map located not only in Germany
-        self.runModule(
+        cls.runModule(
             "v.import",
-            input=self.aoi_map_multi_c_data,
-            output=self.aoi_map_multi_c,
+            input=cls.aoi_map_multi_c_data,
+            output=cls.aoi_map_multi_c,
         )
 
     @classmethod
-    def tearDownClass(self):
+    # pylint: disable=invalid-name
+    def tearDownClass(cls):
         """Remove the temporary region and generated data"""
-        self.runModule(
-            "g.remove", type="vector", name=self.region_map, flags="f"
+        cls.runModule(
+            "g.remove", type="vector", name=cls.region_map, flags="f"
         )
-        self.runModule("g.remove", type="vector", name=self.aoi_map, flags="f")
-        self.runModule(
-            "g.remove", type="vector", name=self.aoi_map_multi, flags="f"
+        cls.runModule("g.remove", type="vector", name=cls.aoi_map, flags="f")
+        cls.runModule(
+            "g.remove", type="vector", name=cls.aoi_map_multi, flags="f"
         )
-        self.runModule(
-            "g.remove", type="vector", name=self.aoi_map_multi_c, flags="f"
+        cls.runModule(
+            "g.remove", type="vector", name=cls.aoi_map_multi_c, flags="f"
         )
 
+    # pylint: disable=invalid-name
     def tearDown(self):
         """Remove the outputs created
         This is executed after each test run.
@@ -108,14 +111,14 @@ class TestVGetAlkisBuildings(TestCase):
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
         )
 
-    def test_option_aoi_map_mutli_fs(self):
+    def test_option_aoi_map_multi_fs(self):
         """tests aoi_map as optional input
         with aoi located in multiple federal states
         """
         v_check = SimpleModule(
             "v.alkis.buildings.import",
             output=self.test_output,
-            federal_state=["Nordrhein-Westfalen", "Rheinland-Pfalz"],
+            federal_state=["Nordrhein-Westfalen", "Hessen"],
             aoi_map=self.aoi_map_multi,
         )
         self.assertModule(
@@ -133,7 +136,7 @@ class TestVGetAlkisBuildings(TestCase):
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
         )
 
-    def test_option_aoi_map_mutli_country(self):
+    def test_option_aoi_map_multi_country(self):
         """tests aoi_map as optional input
         with aoi located only partly in Germany
         """
@@ -215,11 +218,11 @@ class TestVGetAlkisBuildings(TestCase):
             "v.alkis.buildings.import",
             output=self.test_output,
             aoi_map=self.aoi_map,
-            file=os.path.join("data", "singleFs"),
+            file=os.path.join("data", "singleFs.txt"),
         )
         self.assertModule(
             v_check,
-            "Module fails, when file-input" "with single federal state given",
+            "Module fails, when file-input with single federal state given",
         )
         # Data should have following columns:
         # cat, AGS, OI, GFK, AKTUALITAE
@@ -239,8 +242,8 @@ class TestVGetAlkisBuildings(TestCase):
         v_check = SimpleModule(
             "v.alkis.buildings.import",
             output=self.test_output,
-            aoi_map=self.aoi_map,
-            file=os.path.join("data", "multiFs"),
+            aoi_map=self.aoi_map_multi,
+            file=os.path.join("data", "multiFs.txt"),
         )
         self.assertModule(
             v_check,

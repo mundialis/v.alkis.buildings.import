@@ -381,7 +381,7 @@ def import_single_alkis_source(
             input=alkis_source,
             output=output_alkis,
             extent="region",
-            flags=flags,
+            # flags=flags,
             quiet=True,
         )
     else:
@@ -389,7 +389,7 @@ def import_single_alkis_source(
             "v.import",
             input=alkis_source,
             output=output_alkis,
-            flags=flags,
+            # flags=flags,
             quiet=True,
         )
 

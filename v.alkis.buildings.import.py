@@ -313,9 +313,13 @@ def import_single_alkis_source(
     alkis_source, aoi_map, load_region, output_alkis, f_state
 ):
     """Importing single ALKIS source"""
-    # flags = ""
-    # if f_state == "Hessen":
-    #     flags = "o"
+    iflags = ""
+    if f_state == "Hessen":
+        # using -o is dangerous if the GRASS location is in a different CRS
+        # better assign the correct CRS to the input data, e.g. with
+        # ogr2ogr -f VRT -a_srs EPSG:25832 gebaeude_he.vrt ...
+        iflags = "o"
+
     if aoi_map:
         # set region to aoi_map
         grass.run_command("g.region", vector=aoi_map, quiet=True)
@@ -353,7 +357,7 @@ def import_single_alkis_source(
                 input=alkis_source_proj,
                 output=OUTPUT_ALKIS_TEMP,
                 snap=snap,
-                flags="r",
+                flags=iflags + "r",
                 overwrite=True,
                 verbose=True,
                 quiet=True,
@@ -364,7 +368,7 @@ def import_single_alkis_source(
                 input=alkis_source,
                 output=OUTPUT_ALKIS_TEMP,
                 extent="region",
-                # flags=flags,
+                flags=iflags,
                 quiet=True,
             )
         grass.run_command(
@@ -381,7 +385,7 @@ def import_single_alkis_source(
             input=alkis_source,
             output=output_alkis,
             extent="region",
-            # flags=flags,
+            flags=iflags,
             quiet=True,
         )
     else:
@@ -389,7 +393,7 @@ def import_single_alkis_source(
             "v.import",
             input=alkis_source,
             output=output_alkis,
-            # flags=flags,
+            flags=iflags,
             quiet=True,
         )
 

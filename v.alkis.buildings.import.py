@@ -332,9 +332,7 @@ def import_single_alkis_source(
         )
         returncode = popen_s.wait()
         if returncode != 0:
-            grass.fatal(
-                _("Assigning CRS to ALKIS input data failed!")
-            )
+            grass.fatal(_("Assigning CRS to ALKIS input data failed!"))
             sys.exit()
 
     # snap tolerance = 0.1 to remove overlapping areas in some source datasets

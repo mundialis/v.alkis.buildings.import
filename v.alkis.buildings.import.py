@@ -313,60 +313,44 @@ def import_single_alkis_source(
     alkis_source, aoi_map, load_region, output_alkis, f_state
 ):
     """Importing single ALKIS source"""
-    # flags = ""
-    # if f_state == "Hessen":
-    #     flags = "o"
+    alkis_source_fixed = alkis_source
+    if f_state == "Hessen":
+        # shapefile with missing .prj file, CRS is EPSG:25832
+        alkis_source_fixed = alkis_source[:-4] + "_proj.gpkg"
+        popen_s = grass.Popen(
+            (
+                "ogr2ogr",
+                "-a_srs",
+                "EPSG:25832",
+                "-f",
+                "GPKG",
+                "-nlt",
+                "PROMOTE_TO_MULTI",
+                alkis_source_fixed,
+                alkis_source,
+            )
+        )
+        returncode = popen_s.wait()
+        if returncode != 0:
+            grass.fatal(_("Assigning CRS to ALKIS input data failed!"))
+            sys.exit()
+
+    # snap tolerance = 0.1 to remove overlapping areas in some source datasets
+    snap = -1
+    if f_state == "Thüringen":
+        snap = 0.1
+
     if aoi_map:
         # set region to aoi_map
         grass.run_command("g.region", vector=aoi_map, quiet=True)
-        if f_state == "Thüringen":
-            # parse CRS of current location
-            proj_location = grass.parse_command("g.proj", flags="g")["srid"]
-            proj_location = "EPSG:25832"
-            # change CRS of alkis_source vector data of TH
-            # from epsg:4647 to proj_location
-            # assign CRS to alkis_source vector data of HE
-            alkis_source_proj = alkis_source[:-4] + "_proj.gpkg"
-            popen_s = grass.Popen(
-                (
-                    "ogr2ogr",
-                    "-t_srs",
-                    proj_location,
-                    "-f",
-                    "GPKG",
-                    alkis_source_proj,
-                    alkis_source,
-                )
-            )
-            returncode = popen_s.wait()
-            if returncode != 0:
-                grass.message(
-                    _("Assigning new CRS to ALKIS input data failed!")
-                )
-            # in this case snap tolerance = 0.1 to remove
-            # 8 overlapping areas in source dataset
-            # when changing addon structure add trying out snap
-            # tolerance and not using 0.1 in every case for TH
-            snap = 0.1
-            grass.run_command(
-                "v.in.ogr",
-                input=alkis_source_proj,
-                output=OUTPUT_ALKIS_TEMP,
-                snap=snap,
-                flags="r",
-                overwrite=True,
-                verbose=True,
-                quiet=True,
-            )
-        else:
-            grass.run_command(
-                "v.import",
-                input=alkis_source,
-                output=OUTPUT_ALKIS_TEMP,
-                extent="region",
-                # flags=flags,
-                quiet=True,
-            )
+        grass.run_command(
+            "v.import",
+            input=alkis_source_fixed,
+            output=OUTPUT_ALKIS_TEMP,
+            snap=snap,
+            extent="region",
+            quiet=True,
+        )
         grass.run_command(
             "v.clip",
             input=OUTPUT_ALKIS_TEMP,
@@ -378,18 +362,18 @@ def import_single_alkis_source(
     elif load_region:
         grass.run_command(
             "v.import",
-            input=alkis_source,
+            input=alkis_source_fixed,
             output=output_alkis,
+            snap=snap,
             extent="region",
-            flags=flags,
             quiet=True,
         )
     else:
         grass.run_command(
             "v.import",
-            input=alkis_source,
+            input=alkis_source_fixed,
             output=output_alkis,
-            flags=flags,
+            snap=snap,
             quiet=True,
         )
 

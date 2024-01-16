@@ -7,7 +7,7 @@
 
 # PURPOSE:     Downloads ALKIS building data and imports them into GRASS
 #              (currently for Berlin, Brandenburg, Hessen, NRW, Sachsen)
-# COPYRIGHT:   (C) 2022-2023 by mundialis GmbH & Co. KG and the GRASS
+# COPYRIGHT:   (C) 2022-2024 by mundialis GmbH & Co. KG and the GRASS
 #              Development Team
 #
 # This program is free software; you can redistribute it and/or modify

@@ -3,10 +3,10 @@
 ############################################################################
 #
 # MODULE:      v.alkis.buildings.import
-# AUTHOR(S):   Lina Krisztian, Anika Weinmann
+# AUTHOR(S):   Lina Krisztian, Anika Weinmann, Julia Haas
 
 # PURPOSE:     Downloads ALKIS building data and imports them into GRASS
-#              (currently for Berlin, Hessen, NRW)
+#              (currently for Berlin, Brandenburg, Hessen, NRW, Sachsen)
 # COPYRIGHT:   (C) 2022-2023 by mundialis GmbH & Co. KG and the GRASS
 #              Development Team
 #
@@ -23,7 +23,7 @@
 #############################################################################
 
 # %Module
-# % description: Downloads and imports ALKIS building data (currently for Berlin, Hessen, NRW) into GRASS DB
+# % description: Downloads and imports ALKIS building data (currently for Berlin, Brandenburg, Hessen, NRW, Sachsen) into GRASS DB
 # % keyword: vector
 # % keyword: import
 # % keyword: ALKIS
@@ -520,6 +520,7 @@ def main():
                 "Berlin",
                 "Hessen",
                 "Thüringen",
+                "Sachsen"
             ]:
                 url = URLS[federal_state]
                 f_state = federal_state
@@ -545,7 +546,7 @@ def main():
                         " in 'federal_states'-option given"
                     )
                 )
-    # so far, just Berlin, Brandenburg, Hessen and NRW are implemented;
+    # so far, just Berlin, Brandenburg, Hessen, NRW and Sachsen are implemented;
     # in case single federal state given, and not NRW:
     #   skips following part
     #   + grass.message: see above
@@ -571,7 +572,7 @@ def main():
             grass.message(_("Downloading ALKIS building data..."))
             if federal_state == "Hessen":
                 # insert current date into download URL
-                # try dates of yesterday and tomorrow if its not working
+                # try dates of yesterday and tomorrow if it's not working
                 today = datetime.now().strftime("%Y%m%d")
                 yesterday = (datetime.now() - timedelta(days=1)).strftime(
                     "%Y%m%d"
@@ -599,7 +600,7 @@ def main():
                     )
                 )
             # unzip boundaries
-            if federal_state in ["Nordrhein-Westfalen", "Hessen", "Thüringen"]:
+            if federal_state in ["Nordrhein-Westfalen", "Hessen", "Thüringen", "Sachsen"]:
                 zip_file = zipfile.ZipFile(BytesIO(response.content))
                 zip_file.extractall(DLDIR)
             elif federal_state == "Berlin":

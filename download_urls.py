@@ -17,7 +17,8 @@ URLS = {
     "Rheinland-Pfalz": None,
     "Schleswig-Holstein": None,
     "Saarland": None,
-    "Sachsen": None,
+    "Sachsen": "https://geocloud.landesvermessung.sachsen.de/index.php/s"
+    "/YgBfai4gXoiExJx/download?path=%2F&files=hu_sn_shape.zip",
     "Sachsen-Anhalt": None,
     "Thüringen": "https://geoportal.geoportal-th.de/hausko_umr/HU-TH.zip",
 }
@@ -36,7 +37,7 @@ filenames = {
     "Rheinland-Pfalz": None,
     "Schleswig-Holstein": None,
     "Saarland": None,
-    "Sachsen": None,
+    "Sachsen": "hu_sn_gebaeude_20231123.shp",
     "Sachsen-Anhalt": None,
     "Thüringen": "gebaeude-th.shp",
 }

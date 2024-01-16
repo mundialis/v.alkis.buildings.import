@@ -520,7 +520,7 @@ def main():
                 "Berlin",
                 "Hessen",
                 "Thüringen",
-                "Sachsen"
+                "Sachsen",
             ]:
                 url = URLS[federal_state]
                 f_state = federal_state
@@ -600,7 +600,12 @@ def main():
                     )
                 )
             # unzip boundaries
-            if federal_state in ["Nordrhein-Westfalen", "Hessen", "Thüringen", "Sachsen"]:
+            if federal_state in [
+                "Nordrhein-Westfalen",
+                "Hessen",
+                "Thüringen",
+                "Sachsen",
+            ]:
                 zip_file = zipfile.ZipFile(BytesIO(response.content))
                 zip_file.extractall(DLDIR)
             elif federal_state == "Berlin":

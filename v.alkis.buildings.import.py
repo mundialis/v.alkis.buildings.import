@@ -182,8 +182,8 @@ def url_response(url):
     return url
 
 
-def administrative_boundaries(polygon_name):
-    """returns list of districts overlapping with AOI/region"""
+def administrative_boundaries(aoi_name):
+    """Returns list of districts overlapping with AOI/region"""
     # url of administrative boundaries
     url = (
         "https://daten.gdz.bkg.bund.de/produkte/vg/vg5000_0101/"
@@ -196,53 +196,45 @@ def administrative_boundaries(polygon_name):
         "VG5000_KRS.shp",
     )
 
-    # create tempdirectory for unzipping files
-    path_admin_boundaries = grass.tempdir()
-    # download administrative boundaries as .zip
+    # check if URL is reachable
     response = requests.get(url)
     if not response.status_code == 200:
         sys.exit(
             (
-                "v.alkis.nutzung.import was stopped. The data of the"
+                "v.alkis.buildings.import was stopped. The data of the"
                 "district boundaries are currently not available."
             )
         )
-    # unzip boundaries
-    zip_file = ZipFile(BytesIO(response.content))
-    zip_file.extractall(path_admin_boundaries)
 
-    # import district shapefile
-    vec_all_district_vec = f"all_districts_vec_{os.getpid()}"
-    rmvecmaps.append(vec_all_district_vec)
+    # download and import administrative boundaries
+    grass.run_command(
+        "g.region",
+        vect=aoi_name,
+        quiet=True,
+    )
+
+    vsi_command = f"/vsizip/vsicurl/{url}/{filename}"
+    districts_vec = f"all_districts_vec_{os.getpid()}"
+    rmvecmaps.append(districts_vec)
     grass.run_command(
         "v.import",
-        input=os.path.join(path_admin_boundaries, filename),
-        output=vec_all_district_vec,
+        input=vsi_command,
+        output=districts_vec,
+        extent="region",
+        overwrite=True,
         quiet=True,
     )
 
     # get district of AOI/region-polygon
-    vec_poly_district_vec = f"poly_districts_vec_{os.getpid()}"
-    rmvecmaps.append(vec_poly_district_vec)
-    grass.run_command(
-        "v.clip",
-        input=vec_all_district_vec,
-        clip=polygon_name,
-        output=vec_poly_district_vec,
-        flags="d",
-        quiet=True,
+    krs_list = list(
+        grass.parse_command(
+            "v.db.select",
+            map=districts_vec,
+            columns="GEN",
+            flags="c",
+        ).keys()
     )
-
-    if vec_poly_district_vec:
-        krs_list = list(
-            grass.parse_command(
-                "v.db.select",
-                map=vec_poly_district_vec,
-                columns="GEN",
-                flags="c",
-            ).keys()
-        )
-        grass.message(krs_list)
+    grass.message(krs_list)
     return krs_list
 
 

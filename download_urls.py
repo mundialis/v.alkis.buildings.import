@@ -1,45 +1,66 @@
 #!/usr/bin/env python3
+#
+############################################################################
+#
+# MODULE:      download_urls
+# AUTHOR(S):   Anika Weinmann, Julia Haas
+
+# PURPOSE:     German Federal State download urls for ALKIS buildings
+# COPYRIGHT:   (C) 2024 by mundialis GmbH & Co. KG and the GRASS
+#              Development Team
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+#############################################################################
 
 URLS = {
-    "Brandenburg": None,
-    "Berlin": "https://datenbox.stadt-berlin.de/ssf/s/readFile/share"
+    "BW": None,
+    "BY": None,
+    "BE": "https://datenbox.stadt-berlin.de/ssf/s/readFile/share"
     "/14254/8799702476865788292/publicLink/SHP_BE_ALKIS.7z",
-    "Baden-Württemberg": None,
-    "Bayern": None,
-    "Bremen": None,
-    "Hessen": "https://gds.hessen.de/downloadcenter/DATE/"
+    "BB": None,
+    "HB": None,
+    "HH": None,
+    "HE": "https://gds.hessen.de/downloadcenter/DATE/"
     "Liegenschaftskataster/Hausumringe%20(shape)/Hausumringe%20Hessen.zip",
-    "Hamburg": None,
-    "Mecklenburg-Vorpommern": None,
-    "Niedersachsen": None,
-    "Nordrhein-Westfalen": "https://www.opengeodata.nrw.de/produkte/geobasis"
+    "MV": None,
+    "NI": None,
+    "NW": "https://www.opengeodata.nrw.de/produkte/geobasis"
     "/lk/akt/hu_shp/hu_EPSG4647_Shape.zip",
-    "Rheinland-Pfalz": None,
-    "Schleswig-Holstein": None,
-    "Saarland": None,
-    "Sachsen": "https://geocloud.landesvermessung.sachsen.de/index.php/s"
+    "RP": None,
+    "SL": None,
+    "SN": "https://geocloud.landesvermessung.sachsen.de/index.php/s"
     "/YgBfai4gXoiExJx/download?path=%2F&files=hu_sn_shape.zip",
-    "Sachsen-Anhalt": None,
-    "Thüringen": "https://geoportal.geoportal-th.de/hausko_umr/HU-TH.zip",
+    "ST": None,
+    "SH": None,
+    "TH": "https://geoportal.geoportal-th.de/hausko_umr/HU-TH.zip",
 }
 
-filenames = {
-    "Brandenburg": None,
-    "Berlin": "SHP_BE_ALKIS_Merged/Gebaeude_Bauteile_Flaechen.shp",
-    "Baden-Württemberg": None,
-    "Bayern": None,
-    "Bremen": None,
-    "Hessen": "gebaeude-he.shp",
-    "Hamburg": None,
-    "Mecklenburg-Vorpommern": None,
-    "Niedersachsen": None,
-    "Nordrhein-Westfalen": "hu_shp.shp",
-    "Rheinland-Pfalz": None,
-    "Schleswig-Holstein": None,
-    "Saarland": None,
-    "Sachsen": "hu_sn_gebaeude_20231123.shp",
-    "Sachsen-Anhalt": None,
-    "Thüringen": "gebaeude-th.shp",
+BUILDINGS_FILENAMES = {
+    "BW": None,
+    "BY": None,
+    "BE": "SHP_BE_ALKIS_Merged/Gebaeude_Bauteile_Flaechen.shp",
+    "BB": None,
+    "HB": None,
+    "HH": None,
+    "HE": "gebaeude-he.shp",
+    "MV": None,
+    "NI": None,
+    "NW": "hu_shp.shp",
+    "RP": None,
+    "SL": None,
+    "SN": "hu_sn_gebaeude_20231123.shp",
+    "ST": None,
+    "SH": None,
+    "TH": "gebaeude-th.shp",
 }
 
 BB_districts = {

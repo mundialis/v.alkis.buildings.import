@@ -1,6 +1,7 @@
 <h2>DESCRIPTION</h2>
 
 <em>v.alkis.buildings.import</em> downloads ALKIS building data and imports them into GRASS.
+Alternatively, local data can be imported.
 To download the data, the federal_state(s) of the area of interest has to be given.
 Either given in a text file, comma-separated for multiple federal_states (<b>file</b> option).
 Or given directly as input, comma-separated for multiple federal_states (<b>federal_state</b> option).
@@ -13,6 +14,7 @@ With the <b>-r</b> flag, the data are imported only for the current set region.
 <p>
 Implemented federal state options are:
 <ul>
+    <li>Baden-Würrtemberg: only local data</li>
     <li>Berlin</li>
     <li>Brandenburg</li>
     <li>Hessen</li>
@@ -20,9 +22,21 @@ Implemented federal state options are:
     <li>Sachsen</li>
 </ul>
 
+For local data import the parameter <b>local_data_dir</b> has to be given and 
+the folder structure has to be as follows:
+<div class="code"><pre>
+/path/to/ALKIS_buildings/
+├── BW/*.gpkg
+└── NW/*.shp
+└── ...
+</pre></div>
+If local data does not overlap with AOI, data will be downloaded from Open Data 
+portals if federal state supports Open Data.
+
 <h2>REQUIREMENTS</h2>
 
-<div class="code"><pre>py7zr</pre></div> needs to be installed.
+<div class="code"><pre>py7zr</pre></div>,
+<div class="code"><pre>grass-gis-helpers</pre></div> need to be installed.
 
 <h2>EXAMPLE</h2>
 
@@ -57,6 +71,13 @@ v.alkis.buildings.import output=alkis_buildings federal_state=Nordrhein-Westfale
 v.alkis.buildings.import output=alkis_buildings federal_state=Nordrhein-Westfalen -r
 </pre></div>
 
+<h3>Load ALKIS building data from local file</h3>
+
+<div class="code"><pre>
+v.alkis.buildings.import aoi_map=AOI_BW output=buildings_bw federal_state=Baden-Württemberg local_data_dir=/path/to/ALKIS_buildings/
+</pre></div>
+
+
 <h2>SEE ALSO</h2>
 
 <em>
@@ -66,3 +87,5 @@ v.alkis.buildings.import output=alkis_buildings federal_state=Nordrhein-Westfale
 <h2>AUTHORS</h2>
 
 Lina Krisztian, <a href="https://www.mundialis.de/">mundialis</a>
+Anika Weinmann, <a href="https://www.mundialis.de/">mundialis</a>
+Julia Haas, <a href="https://www.mundialis.de/">mundialis</a>

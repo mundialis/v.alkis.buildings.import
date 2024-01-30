@@ -120,7 +120,7 @@ from download_urls import (
     BB_districts,
     download_dict,
 )
-from fs import FS_ABBREVIATION
+from federal_state_info import FS_ABBREVIATION
 
 orig_region = None
 OUTPUT_ALKIS_TEMP = None
@@ -606,7 +606,9 @@ def main():
         federal_states = options["federal_state"].strip()
 
     # get list of local input folders for federal states
-    local_fs_list = os.listdir(local_data_dir)
+    local_fs_list = []
+    if local_data_dir and local_data_dir != "":
+        local_fs_list = os.listdir(local_data_dir)
 
     # region
     orig_region = f"ORIG_REGION{PID}"

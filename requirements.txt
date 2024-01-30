@@ -1,2 +1,3 @@
 py7zr
 grass_gis_helpers
+requests

@@ -2,7 +2,7 @@
 #
 ############################################################################
 #
-# MODULE:      fs
+# MODULE:      federal_state_info
 # AUTHOR(S):   Anika Weinmann, Julia Haas
 
 # PURPOSE:     German Federal State information as dictionary

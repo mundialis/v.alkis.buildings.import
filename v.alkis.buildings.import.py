@@ -292,7 +292,7 @@ def download_alkis_buildings(fs, url):
     buildings_filename = BUILDINGS_FILENAMES[fs]
     alkis_source = os.path.join(dldir, buildings_filename)
     if not os.path.isfile(alkis_source):
-        grass.message(_("Downloading ALKIS building data..."))
+        grass.message(_(f"Downloading ALKIS building data ({fs})..."))
         if fs == "HE":
             # insert current date into download URL
             # try dates of yesterday and tomorrow if it's not working
@@ -365,6 +365,12 @@ def import_single_alkis_source(
     if aoi_map:
         # set region to aoi_map
         grass.run_command("g.region", vector=aoi_map, quiet=True)
+        # if grass.find_file(
+        #     name=OUTPUT_ALKIS_TEMP, element="vector"
+        # )["file"] != "":
+        #     import pdb; pdb.set_trace()
+        #     OUTPUT_ALKIS_TEMP += "_2"
+        #     rm_vectors.append(OUTPUT_ALKIS_TEMP)
         grass.run_command(
             "v.import",
             input=alkis_source_fixed,
@@ -372,6 +378,7 @@ def import_single_alkis_source(
             snap=snap,
             extent="region",
             quiet=True,
+            overwrite=True,
         )
         grass.run_command(
             "v.clip",
@@ -476,12 +483,7 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None):
     out = output_alkis
     if aoi_map:
         out = OUTPUT_ALKIS_TEMP
-    if len(out_tempall) > 1:
-        grass.run_command(
-            "v.patch", input=out_tempall, output=out, flags="e", quiet=True
-        )
-    else:
-        grass.run_command("g.rename", vector=f"{out_tempall[0]},{out}")
+    patch_vector(out_tempall, out)
     if aoi_map:
         grass.run_command(
             "v.clip",
@@ -572,6 +574,44 @@ def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
 
     return imported_local_data
 
+def cleanup_columns(out_alkis):
+    """Remove additional columns"""
+    cols = grass.vector_columns(out_alkis)
+    rm_cols = []
+    for col in cols:
+        if col not in ["cat", "AGS", "OI", "GFK"]:
+            rm_cols.append(col)
+    for needed_col in ["AGS", "OI", "GFK"]:
+        tmp_col = None
+        if needed_col in cols:
+            tmp_col = f"{needed_col}_tmp"
+            rm_cols.append(tmp_col)
+            grass.run_command(
+                "v.db.renamecolumn",
+                map=out_alkis,
+                column=f"{needed_col},{tmp_col}",
+                quiet=True,
+            )
+            grass.run_command(
+                "v.db.addcolumn",
+                map=out_alkis,
+                columns=f"{needed_col} TEXT",
+                quiet=True,
+            )
+            grass.run_command(
+                "v.db.update",
+                map=out_alkis,
+                column=needed_col,
+                query_column=tmp_col,
+                quiet=True,
+            )
+    if len(rm_cols) > 0:
+        grass.run_command(
+            "v.db.dropcolumn",
+            map=out_alkis,
+            columns=rm_cols,
+            quiet=True,
+        )
 
 def main():
     """main function for processing"""
@@ -657,7 +697,7 @@ def main():
                 alkis_source = download_alkis_buildings(fs, url)
 
             # import to GRASS DB
-            grass.message(_("Importing ALKIS buildings data..."))
+            grass.message(_(f"Importing ALKIS buildings data  ({fs})..."))
             if isinstance(alkis_source, str):
                 import_single_alkis_source(
                     alkis_source,
@@ -668,6 +708,10 @@ def main():
                 )
             else:
                 import_shapefiles(alkis_source, output_alkis_fs, aoi_map)
+
+    # cleanup columns of different federal state data
+    for out_alkis in output_alkis_list:
+        cleanup_columns(out_alkis)
 
     # patch output from several federal states
     patch_vector(output_alkis_list, output_alkis)

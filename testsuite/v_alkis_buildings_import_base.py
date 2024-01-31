@@ -41,6 +41,8 @@ class VAlkisBuildingsImportTestBase(TestCase):
     test_output = f"test_output_{pid}"
     orig_region = f"orig_region_{pid}"
     aoi_map = f"aoi_map_{pid}"
+    east = ""
+    west = ""
 
     GISDBASE = None
     TGTGISRC = None
@@ -86,7 +88,7 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
 
     fs = ""
     federal_state = ""
-
+    alkis_data_dir = ""
 
     @classmethod
     # pylint: disable=invalid-name
@@ -101,12 +103,16 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         )
         # set region
         grass.run_command("g.region", vector=cls.aoi_map, flags="a")
-        grass.run_command("g.region", n="n+200", s="n-100", w="e-100")
+        if cls.east == "" and cls.west == "":
+            grass.run_command("g.region", n="n+200", s="n-100", w="e-100")
+        else:
+            grass.run_command(
+                "g.region", n="n+200", s="n-100", w=cls.west, e=cls.east
+            )
 
     def option_aoi_map(self):
         """Tests aoi_map as optional input"""
         print(f"Running test for {self.fs} AOI...")
-        # import pdb; pdb.set_trace()
         # get this info before running the addon
         region_exp = self.runModule("g.region", flags="g")
         # run module
@@ -115,6 +121,7 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
             output=self.test_output,
             federal_state=self.federal_state,
             aoi_map=self.aoi_map,
+            local_data_dir=self.alkis_data_dir,
             # dldir=
         )
         self.assertModule(v_check, "Using aoi_map as optional input fails")
@@ -141,7 +148,8 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         v_check = SimpleModule(
             "v.alkis.buildings.import",
             output=self.test_output,
-            federal_state="Nordrhein-Westfalen",
+            federal_state=self.federal_state,
+            local_data_dir=self.alkis_data_dir,
             flags="r",
         )
         self.assertModule(v_check, "Using -r flag fails")
@@ -154,15 +162,16 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         self.assertTrue(
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
         )
-        # check extend of output
+        # check extend of output (data should overlap with 50 percent of the
+        # region)
         out_data_reg =  grass.parse_command("v.info", map=self.test_output, flags="g")
         g_reg = grass.region()
         self.assertTrue(
             (
-                float(out_data_reg["north"]) >= g_reg["n"] and
-                float(out_data_reg["south"]) <= g_reg["s"] and
-                float(out_data_reg["east"]) >= g_reg["e"] and
-                float(out_data_reg["west"]) <= g_reg["w"]
+                abs(float(out_data_reg["north"]) - g_reg["n"]) < 25 and
+                abs(float(out_data_reg["south"]) - g_reg["s"]) < 25 and
+                abs(float(out_data_reg["east"]) - g_reg["e"]) < 25 and
+                abs(float(out_data_reg["west"]) - g_reg["w"]) < 25
 
             ),
             "Output data extend is wrong.",
@@ -180,6 +189,7 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
             "v.alkis.buildings.import",
             output=self.test_output,
             aoi_map=self.aoi_map,
+            local_data_dir=self.alkis_data_dir,
             file=os.path.join("data", f"fs_file_{self.fs}.txt"),
         )
         self.assertModule(

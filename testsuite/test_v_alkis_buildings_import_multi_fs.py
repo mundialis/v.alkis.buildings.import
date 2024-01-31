@@ -22,7 +22,6 @@
 
 import os
 
-from grass.gunittest.case import TestCase
 from grass.gunittest.main import test
 from grass.gunittest.gmodules import SimpleModule
 import grass.script as grass
@@ -149,6 +148,7 @@ class VAlkisBuildingsImportTestMulitpleFS(VAlkisBuildingsImportTestBase):
             "Running tests with AOI only partly in Germany and federal "
             "state input file done."
         )
+
 
 if __name__ == "__main__":
     test()

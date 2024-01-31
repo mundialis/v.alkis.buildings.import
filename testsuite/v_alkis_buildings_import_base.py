@@ -23,7 +23,6 @@
 import os
 
 from grass.gunittest.case import TestCase
-from grass.gunittest.main import test
 from grass.gunittest.gmodules import SimpleModule
 import grass.script as grass
 
@@ -99,7 +98,7 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         cls.runModule(
             "v.import",
             input=os.path.join("data", f"test_aoi_{cls.fs}.geojson"),
-            output=cls.aoi_map
+            output=cls.aoi_map,
         )
         # set region
         grass.run_command("g.region", vector=cls.aoi_map, flags="a")
@@ -164,15 +163,16 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         )
         # check extend of output (data should overlap with 50 percent of the
         # region)
-        out_data_reg =  grass.parse_command("v.info", map=self.test_output, flags="g")
+        out_data_reg = grass.parse_command(
+            "v.info", map=self.test_output, flags="g"
+        )
         g_reg = grass.region()
         self.assertTrue(
             (
-                abs(float(out_data_reg["north"]) - g_reg["n"]) < 25 and
-                abs(float(out_data_reg["south"]) - g_reg["s"]) < 25 and
-                abs(float(out_data_reg["east"]) - g_reg["e"]) < 25 and
-                abs(float(out_data_reg["west"]) - g_reg["w"]) < 25
-
+                abs(float(out_data_reg["north"]) - g_reg["n"]) < 25
+                and abs(float(out_data_reg["south"]) - g_reg["s"]) < 25
+                and abs(float(out_data_reg["east"]) - g_reg["e"]) < 25
+                and abs(float(out_data_reg["west"]) - g_reg["w"]) < 25
             ),
             "Output data extend is wrong.",
         )
@@ -183,7 +183,9 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         """Tests file as input option for federal state(s) information
         single federal state - case
         """
-        print(f"Running test for {self.fs} AOI and federal state file input...")
+        print(
+            f"Running test for {self.fs} AOI and federal state file input..."
+        )
         # single federal state in file
         v_check = SimpleModule(
             "v.alkis.buildings.import",
@@ -205,4 +207,6 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         self.assertTrue(
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
         )
-        print(f"Running test for {self.fs} AOI and federal state file input done.")
+        print(
+            f"Running test for {self.fs} AOI and federal state file input done."
+        )

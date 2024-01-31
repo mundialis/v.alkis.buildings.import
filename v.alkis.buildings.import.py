@@ -574,6 +574,7 @@ def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
 
     return imported_local_data
 
+
 def cleanup_columns(out_alkis):
     """Remove additional columns"""
     cols = grass.vector_columns(out_alkis)
@@ -613,6 +614,7 @@ def cleanup_columns(out_alkis):
             columns=rm_cols,
             quiet=True,
         )
+
 
 def main():
     """main function for processing"""

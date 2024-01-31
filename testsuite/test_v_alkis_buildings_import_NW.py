@@ -41,5 +41,6 @@ class VAlkisBuildingsImportTestNW(VAlkisBuildingsImportTestFsBase):
         """Tests aoi_map as optional input and federal state input file"""
         self.file_input_single()
 
+
 if __name__ == "__main__":
     test()

@@ -1,0 +1,11 @@
+name: Run tests for GRASS GIS addons
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ main ]
+
+jobs:
+  tests:
+    uses: mundialis/github-workflows/.github/workflows/grass-tests.yml@main

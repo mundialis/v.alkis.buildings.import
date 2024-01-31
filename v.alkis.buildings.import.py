@@ -592,12 +592,13 @@ def cleanup_columns(out_alkis):
                 column=f"{needed_col},{tmp_col}",
                 quiet=True,
             )
-            grass.run_command(
-                "v.db.addcolumn",
-                map=out_alkis,
-                columns=f"{needed_col} TEXT",
-                quiet=True,
-            )
+        grass.run_command(
+            "v.db.addcolumn",
+            map=out_alkis,
+            columns=f"{needed_col} TEXT",
+            quiet=True,
+        )
+        if tmp_col:
             grass.run_command(
                 "v.db.update",
                 map=out_alkis,

@@ -2,9 +2,9 @@
 #
 ############################################################################
 #
-# MODULE:      v.alkis.buildings.import test for NW
+# MODULE:      v.alkis.buildings.import test for BW
 # AUTHOR(S):   Lina Krisztian, Anika Weinmann
-# PURPOSE:     Tests v.alkis.buildings.import for NW
+# PURPOSE:     Tests v.alkis.buildings.import for BW
 # COPYRIGHT:   (C) 2022-2024 by mundialis GmbH & Co. KG and the GRASS
 #              Development Team
 #

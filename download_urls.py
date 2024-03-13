@@ -57,7 +57,7 @@ BUILDINGS_FILENAMES = {
     "NW": "hu_shp.shp",
     "RP": None,
     "SL": None,
-    "SN": "hu_sn_gebaeude_20231123.shp",
+    "SN": "hu_sn_gebaeude_20240118.shp",
     "ST": None,
     "SH": None,
     "TH": "gebaeude-th.shp",

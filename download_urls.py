@@ -54,7 +54,7 @@ BUILDINGS_FILENAMES = {
     "HE": "gebaeude-he.shp",
     "MV": None,
     "NI": None,
-    "NW": "gru_vereinf_05314000_Bonn_EPSG25832_GeoPackage.gpkg",
+    "NW": "202601_gru_vereinf_05314000_Bonn_EPSG25832.gpkg",
     "RP": None,
     "SL": None,
     "SN": "hu_sn_gebaeude_20240118.shp",

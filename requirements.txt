@@ -1,5 +1,5 @@
 numpy
 py7zr<1.1
-pyzstd<0.19
+pyzstd<0.20
 grass-gis-helpers
 requests

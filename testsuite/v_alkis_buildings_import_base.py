@@ -103,10 +103,12 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         # set region
         grass.run_command("g.region", vector=cls.aoi_map, flags="a")
         if cls.east == "" and cls.west == "":
-            grass.run_command("g.region", n="n+200", s="n-100", w="e-100")
+            grass.run_command(
+                "g.region", n="n+200", s="s-100", w="w-100", e="e+100"
+            )
         else:
             grass.run_command(
-                "g.region", n="n+200", s="n-100", w=cls.west, e=cls.east
+                "g.region", n="n+200", s="s-100", w=cls.west, e=cls.east
             )
 
     def option_aoi_map(self):

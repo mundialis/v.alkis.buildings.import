@@ -63,6 +63,10 @@ BUILDINGS_FILENAMES = {
     "TH": "gebaeude-th.shp",
 }
 
+BUILDINGS_LAYERS = {
+    "NW": "GebauedeBauwerk",
+}
+
 BB_districts = {
     "BAR": "Barnim",
     "BRB": "Brandenburg an der Havel",

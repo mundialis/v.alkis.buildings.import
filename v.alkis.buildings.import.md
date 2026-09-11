@@ -10,8 +10,7 @@ data for a complete federal state could fail, due to too small RAM. To
 avoid this, the data can be loaded for a smaller region, either by using
 the **aoi_map** option, or by using the **-r** flag. With **aoi_map**,
 the data are imported only for the given vector map (given in GRASS DB).
-With the **-r** flag, the data are imported only for the current set
-region.
+With the **-r** flag, the data are imported only for the current set region.
 
 Implemented federal state options are:
 

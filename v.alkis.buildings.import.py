@@ -175,7 +175,6 @@ def administrative_boundaries(aoi_name):
     )
     # file of administrative boundaries in zip
     filename = os.path.join(
-        "vg5000_01-01.utm32s.shape.ebenen",
         "vg5000_ebenen_0101",
         "VG5000_KRS.shp",
     )
@@ -241,7 +240,7 @@ def download_alkis_buildings_bb(aoi_map):
                 kbs_url = [
                     url
                     for url in all_urls_bl
-                    if f"ALKIS_Shape_{key}.zip" in url
+                    if f"alkis_shape_{key.lower()}.zip" in url
                 ][0]
                 kbs_zip = os.path.basename(kbs_url)
                 kbs_zips.append(kbs_zip)
@@ -262,7 +261,7 @@ def download_alkis_buildings_bb(aoi_map):
 
     # for Brandenburg shape files
     shp_files = []
-    globstring = "ALKIS_Shape_*.zip"
+    globstring = "alkis_shape_*.zip"
     zip_files = glob.glob(os.path.join(dldir, globstring))
     for zip_file in zip_files:
         zip_base_name = os.path.basename(zip_file)
@@ -275,7 +274,7 @@ def download_alkis_buildings_bb(aoi_map):
                 list_of_file_names = zip_obj.namelist()
                 for file_name in list_of_file_names:
                     # should be nutzung and nutz-nungFlurstueck
-                    if "gebauedeBauwerk" in file_name:
+                    if "GebauedeBauwerk" in file_name:
                         file_path = os.path.join(shp_dir, file_name)
                         if not os.path.isfile(file_path):
                             zip_obj.extract(file_name, shp_dir)
@@ -413,26 +412,37 @@ def change_col_text_type(map):
         col.split("|")[1]: col.split("|")[0]
         for col in grass.parse_command("v.info", map=map, flags="cg")
     }
+
     for col, col_type in column_list.items():
         if col_type == "CHARACTER":
+            tmp_col = f"{col}_tmp_{PID}"
+
             grass.run_command(
                 "v.db.addcolumn",
                 map=map,
-                column=f"{col},{col}_tmp_{PID}",
+                columns=f"{tmp_col} TEXT",
                 quiet=True,
             )
-            grass.run_command(
-                "v.db.addcolumn",
-                map=map,
-                columns=f"{col} TEXT",
-                quiet=True,
-            )
+
             grass.run_command(
                 "v.db.update",
                 map=map,
-                layer=1,
+                column=tmp_col,
+                query_column=col,
+                quiet=True,
+            )
+
+            grass.run_command(
+                "v.db.dropcolumn",
+                map=map,
                 column=col,
-                query_column=f"{col}_tmp_{PID}",
+                quiet=True,
+            )
+
+            grass.run_command(
+                "v.db.renamecolumn",
+                map=map,
+                column=f"{tmp_col},{col}",
                 quiet=True,
             )
 
@@ -444,8 +454,10 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None):
     out_tempall = list()
     for shape_file in shape_files:
         grass.message(_(f"Importing {shape_file}"))
-        out_temp = f"""out_temp_{PID}_
-        {os.path.splitext(os.path.basename(shape_file))[0]}"""
+        out_temp = (
+            f"out_temp_{PID}_"
+            f"{os.path.splitext(os.path.basename(shape_file))[0]}"
+        )
         rm_vectors.append(out_temp)
         grass.run_command(
             "v.import",

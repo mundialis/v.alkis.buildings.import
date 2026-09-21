@@ -63,7 +63,7 @@ BUILDINGS_FILENAMES = {
     "TH": "gebaeude-th.shp",
 }
 
-BB_districts = {
+BB_DISTRICTS = {
     "BAR": "Barnim",
     "BRB": "Brandenburg an der Havel",
     "CB": "Cottbus",

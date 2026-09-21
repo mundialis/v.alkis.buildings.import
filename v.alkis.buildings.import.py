@@ -508,6 +508,7 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None):
 
 
 def patch_vector(vector_list, output):
+    """Patch vectors from several federal states into one vector."""
     # patch output from several federal states
     if len(vector_list) > 1:
         grass.run_command(

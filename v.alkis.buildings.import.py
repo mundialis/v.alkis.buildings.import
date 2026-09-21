@@ -630,7 +630,7 @@ def cleanup_columns(out_alkis):
 
 def main():
     """main function for processing"""
-    global ORIG_REGION, OUTPUT_ALKIS_TEMP, PID, DLDIR
+    global OUTPUT_ALKIS_TEMP, PID
     PID = os.getpid()
 
     # parser options:

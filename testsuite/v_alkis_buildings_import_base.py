@@ -103,10 +103,12 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         # set region
         grass.run_command("g.region", vector=cls.aoi_map, flags="a")
         if cls.east == "" and cls.west == "":
-            grass.run_command("g.region", n="n+200", s="n-100", w="e-100")
+            grass.run_command(
+                "g.region", n="n+200", s="s-100", w="w-100", e="e+100"
+            )
         else:
             grass.run_command(
-                "g.region", n="n+200", s="n-100", w=cls.west, e=cls.east
+                "g.region", n="n+200", s="s-100", w=cls.west, e=cls.east
             )
 
     def option_aoi_map(self):
@@ -161,20 +163,26 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         self.assertTrue(
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"
         )
-        # check extend of output (data should overlap with 50 percent of the
-        # region)
+        # check that output extent overlaps with at least 50% of the region
         out_data_reg = grass.parse_command(
             "v.info", map=self.test_output, flags="g"
         )
         g_reg = grass.region()
+        overlap_e = min(float(out_data_reg["east"]), g_reg["e"])
+        overlap_w = max(float(out_data_reg["west"]), g_reg["w"])
+        overlap_n = min(float(out_data_reg["north"]), g_reg["n"])
+        overlap_s = max(float(out_data_reg["south"]), g_reg["s"])
+        if overlap_e > overlap_w and overlap_n > overlap_s:
+            overlap_area = (overlap_e - overlap_w) * (overlap_n - overlap_s)
+            region_area = (g_reg["e"] - g_reg["w"]) * (g_reg["n"] - g_reg["s"])
+            overlap_pct = overlap_area / region_area * 100
+        else:
+            overlap_pct = 0
         self.assertTrue(
-            (
-                abs(float(out_data_reg["north"]) - g_reg["n"]) < 25
-                and abs(float(out_data_reg["south"]) - g_reg["s"]) < 25
-                and abs(float(out_data_reg["east"]) - g_reg["e"]) < 25
-                and abs(float(out_data_reg["west"]) - g_reg["w"]) < 25
+            overlap_pct > 50,
+            "Output data overlaps only {:.0f}% of the region".format(
+                overlap_pct
             ),
-            "Output data extend is wrong.",
         )
 
         print(f"Running test for {self.fs} region flag done.")

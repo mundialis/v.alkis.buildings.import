@@ -117,6 +117,7 @@ sys.path.insert(
 from download_urls import (
     URLS,
     BUILDINGS_FILENAMES,
+    BUILDINGS_LAYERS,
     BB_districts,
     download_dict,
 )
@@ -332,7 +333,7 @@ def download_alkis_buildings(fs, url):
 
 
 def import_single_alkis_source(
-    alkis_source, aoi_map, load_region, output_alkis, f_state
+    alkis_source, aoi_map, load_region, output_alkis, f_state, layer=None
 ):
     """Importing single ALKIS source"""
     alkis_source_fixed = alkis_source
@@ -362,23 +363,23 @@ def import_single_alkis_source(
     if f_state == "Thüringen":
         snap = 0.1
 
+    vimport_opts = dict(
+        input=alkis_source_fixed,
+        snap=snap,
+        quiet=True,
+    )
+    if layer:
+        vimport_opts["layer"] = layer
+
     if aoi_map:
         # set region to aoi_map
         grass.run_command("g.region", vector=aoi_map, quiet=True)
-        # if grass.find_file(
-        #     name=OUTPUT_ALKIS_TEMP, element="vector"
-        # )["file"] != "":
-        #     import pdb; pdb.set_trace()
-        #     OUTPUT_ALKIS_TEMP += "_2"
-        #     rm_vectors.append(OUTPUT_ALKIS_TEMP)
         grass.run_command(
             "v.import",
-            input=alkis_source_fixed,
             output=OUTPUT_ALKIS_TEMP,
-            snap=snap,
             extent="region",
-            quiet=True,
             overwrite=True,
+            **vimport_opts,
         )
         grass.run_command(
             "v.clip",
@@ -391,19 +392,15 @@ def import_single_alkis_source(
     elif load_region:
         grass.run_command(
             "v.import",
-            input=alkis_source_fixed,
             output=output_alkis,
-            snap=snap,
             extent="region",
-            quiet=True,
+            **vimport_opts,
         )
     else:
         grass.run_command(
             "v.import",
-            input=alkis_source_fixed,
             output=output_alkis,
-            snap=snap,
-            quiet=True,
+            **vimport_opts,
         )
 
 
@@ -701,6 +698,7 @@ def main():
 
             # import to GRASS DB
             grass.message(_(f"Importing ALKIS buildings data  ({fs})..."))
+            layer_name = BUILDINGS_LAYERS.get(fs)
             if isinstance(alkis_source, str):
                 import_single_alkis_source(
                     alkis_source,
@@ -708,6 +706,7 @@ def main():
                     load_region,
                     output_alkis_fs,
                     federal_state,
+                    layer=layer_name,
                 )
             else:
                 import_shapefiles(alkis_source, output_alkis_fs, aoi_map)

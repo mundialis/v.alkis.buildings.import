@@ -129,7 +129,6 @@ class VAlkisBuildingsImportTestFsBase(VAlkisBuildingsImportTestBase):
         atr_dict = grass.parse_command(
             "v.info", map=self.test_output, flags="c"
         )
-        import pdb; pdb.set_trace()
         atr = list(atr_dict.keys())
         self.assertTrue(
             "AGS" in atr[1], "Module failed, because of missins key 'AGS'"

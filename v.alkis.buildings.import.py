@@ -62,7 +62,7 @@
 # %end
 
 # %option
-# % key: dldir
+# % key: DLDIR
 # % label: Path of output folder
 # % description: Path of folder for Download outputdata e.g./home/usr/alkis/output
 # % required: no
@@ -117,14 +117,14 @@ sys.path.insert(
 from download_urls import (
     URLS,
     BUILDINGS_FILENAMES,
-    BB_districts,
+    BB_DISTRICTS,
     download_dict,
 )
 from federal_state_info import FS_ABBREVIATION
 
-orig_region = None
+ORIG_REGION = None
 OUTPUT_ALKIS_TEMP = None
-dldir = None
+DLDIR = None
 PID = None
 currentpath = os.getcwd()
 rm_vectors = []
@@ -134,10 +134,10 @@ def cleanup():
     """removes created objects when finished or failed"""
     rm_dirs = []
     if not flags["d"]:
-        rm_dirs.append(dldir)
+        rm_dirs.append(DLDIR)
 
     general_cleanup(
-        orig_region=orig_region, rm_vectors=rm_vectors, rm_dirs=rm_dirs
+        ORIG_REGION=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs
     )
 
 
@@ -235,7 +235,7 @@ def download_alkis_buildings_bb(aoi_map):
     kbs_zips = []
     all_urls_bl = download_dict["Brandenburg"]
     for krs in krs_list:
-        for key, val in BB_districts.items():
+        for key, val in BB_DISTRICTS.items():
             if val == krs:
                 kbs_url = [
                     url
@@ -244,13 +244,13 @@ def download_alkis_buildings_bb(aoi_map):
                 ][0]
                 kbs_zip = os.path.basename(kbs_url)
                 kbs_zips.append(kbs_zip)
-                if not os.path.isfile(os.path.join(dldir, kbs_zip)):
+                if not os.path.isfile(os.path.join(DLDIR, kbs_zip)):
                     filtered_urls.append(kbs_url)
 
     grass.message(
         _(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}...")
     )
-    os.chdir(dldir)
+    os.chdir(DLDIR)
     pool = ThreadPool(3)
     results = pool.imap_unordered(url_response, filtered_urls)
     for result in results:
@@ -262,10 +262,10 @@ def download_alkis_buildings_bb(aoi_map):
     # for Brandenburg shape files
     shp_files = []
     globstring = "alkis_shape_*.zip"
-    zip_files = glob.glob(os.path.join(dldir, globstring))
+    zip_files = glob.glob(os.path.join(DLDIR, globstring))
     for zip_file in zip_files:
         zip_base_name = os.path.basename(zip_file)
-        shp_dir = os.path.join(dldir, zip_base_name.rsplit(".", 1)[0])
+        shp_dir = os.path.join(DLDIR, zip_base_name.rsplit(".", 1)[0])
         if not os.path.isdir(shp_dir):
             os.makedirs(shp_dir)
         if zip_base_name in kbs_zips:
@@ -289,7 +289,7 @@ def download_alkis_buildings(fs, url):
     # create tempdirectory for unzipping files
     # file of interest in zip
     buildings_filename = BUILDINGS_FILENAMES[fs]
-    alkis_source = os.path.join(dldir, buildings_filename)
+    alkis_source = os.path.join(DLDIR, buildings_filename)
     if not os.path.isfile(alkis_source):
         grass.message(_(f"Downloading ALKIS building data ({fs})..."))
         if fs == "HE":
@@ -320,10 +320,10 @@ def download_alkis_buildings(fs, url):
         # unzip boundaries
         if url.endswith(".zip"):
             zip_file = zipfile.ZipFile(BytesIO(response.content))
-            zip_file.extractall(dldir)
+            zip_file.extractall(DLDIR)
         elif url.endswith(".7z"):
             zip_file = py7zr.SevenZipFile(BytesIO(response.content))
-            zip_file.extractall(dldir)
+            zip_file.extractall(DLDIR)
         else:
             grass.fatal(_("Zip format not (yet) supported."))
 
@@ -630,7 +630,7 @@ def cleanup_columns(out_alkis):
 
 def main():
     """main function for processing"""
-    global orig_region, OUTPUT_ALKIS_TEMP, PID, dldir
+    global ORIG_REGION, OUTPUT_ALKIS_TEMP, PID, DLDIR
     PID = os.getpid()
 
     # parser options:
@@ -638,7 +638,7 @@ def main():
     file_federal_state = options["file"]
     load_region = flags["r"]
     local_data_dir = options["local_data_dir"]
-    dldir = options["dldir"]
+    dldir = options["DLDIR"]
     OUTPUT_ALKIS_TEMP = f"OUTPUT_ALKIS_TEMP_{PID}"
     rm_vectors.append(OUTPUT_ALKIS_TEMP)
     output_alkis = options["output"]

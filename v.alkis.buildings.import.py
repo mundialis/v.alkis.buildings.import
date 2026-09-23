@@ -62,7 +62,7 @@
 # %end
 
 # %option
-# % key: DLDIR
+# % key: dldir
 # % label: Path of output folder
 # % description: Path of folder for Download outputdata e.g./home/usr/alkis/output
 # % required: no
@@ -91,17 +91,17 @@
 # % excludes: aoi_map, -r
 # %end
 
-import zipfile
-import os
-import sys
 import atexit
 import glob
+import os
+import sys
+import zipfile
+from datetime import datetime, timedelta
 from io import BytesIO
-from zipfile import ZipFile
-from time import sleep
 from multiprocessing.pool import ThreadPool
-from datetime import datetime
-from datetime import timedelta
+from time import sleep
+from zipfile import ZipFile
+
 import grass.script as grass
 import py7zr
 import requests
@@ -109,15 +109,13 @@ from grass_gis_helpers.cleanup import general_cleanup
 
 sys.path.insert(
     1,
-    os.path.join(
-        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
-    ),
+    os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
 )
 # pylint: disable=wrong-import-position
 from download_urls import (
-    URLS,
-    BUILDINGS_FILENAMES,
     BB_DISTRICTS,
+    BUILDINGS_FILENAMES,
+    URLS,
     download_dict,
 )
 from federal_state_info import FS_ABBREVIATION
@@ -136,9 +134,7 @@ def cleanup():
     if not flags["d"]:
         rm_dirs.append(DLDIR)
 
-    general_cleanup(
-        ORIG_REGION=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs
-    )
+    general_cleanup(ORIG_REGION=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs)
 
 
 def url_response(url):
@@ -154,8 +150,7 @@ def url_response(url):
             response = requests.get(url, stream=True, timeout=800)
             response.raise_for_status()
             with open(str(filename), "wb") as file:
-                for chunk in response.iter_content(chunk_size=8192):
-                    file.write(chunk)
+                file.writelines(response.iter_content(chunk_size=8192))
             trydownload = False
         except Exception:
             grass.message(_("retry download"))
@@ -183,10 +178,8 @@ def administrative_boundaries(aoi_name):
     response = requests.get(url)
     if not response.status_code == 200:
         sys.exit(
-            (
-                "v.alkis.buildings.import was stopped. The data of the"
-                "district boundaries are currently not available."
-            )
+            "v.alkis.buildings.import was stopped. The data of the"
+            "district boundaries are currently not available."
         )
 
     # download and import administrative boundaries
@@ -247,9 +240,7 @@ def download_alkis_buildings_bb(aoi_map):
                 if not os.path.isfile(os.path.join(DLDIR, kbs_zip)):
                     filtered_urls.append(kbs_url)
 
-    grass.message(
-        _(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}...")
-    )
+    grass.message(_(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}..."))
     os.chdir(DLDIR)
     pool = ThreadPool(3)
     results = pool.imap_unordered(url_response, filtered_urls)
@@ -454,10 +445,7 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None):
     out_tempall = list()
     for shape_file in shape_files:
         grass.message(_(f"Importing {shape_file}"))
-        out_temp = (
-            f"out_temp_{PID}_"
-            f"{os.path.splitext(os.path.basename(shape_file))[0]}"
-        )
+        out_temp = f"out_temp_{PID}_{os.path.splitext(os.path.basename(shape_file))[0]}"
         rm_vectors.append(out_temp)
         grass.run_command(
             "v.import",
@@ -639,7 +627,11 @@ def main():
     file_federal_state = options["file"]
     load_region = flags["r"]
     local_data_dir = options["local_data_dir"]
+<<<<<<< Updated upstream
     DLDIR = options["dldir"]
+=======
+    dldir = options["dldir"]
+>>>>>>> Stashed changes
     OUTPUT_ALKIS_TEMP = f"OUTPUT_ALKIS_TEMP_{PID}"
     rm_vectors.append(OUTPUT_ALKIS_TEMP)
     output_alkis = options["output"]
@@ -649,9 +641,7 @@ def main():
         dldir = grass.tempdir()
     else:
         if not os.path.exists(dldir):
-            grass.message(
-                _(f"Download folder {dldir} does not exist. Creating it...")
-            )
+            grass.message(_(f"Download folder {dldir} does not exist. Creating it..."))
             os.makedirs(dldir)
 
     # get federal state
@@ -688,9 +678,7 @@ def main():
                 aoi_map, local_data_dir, fs, output_alkis_fs
             )
         elif fs in ["BW"]:
-            grass.fatal(
-                _(f"No local data for {fs} available. Is the path correct?")
-            )
+            grass.fatal(_(f"No local data for {fs} available. Is the path correct?"))
 
         # check if federal state is supported
         if not imported_local_data:

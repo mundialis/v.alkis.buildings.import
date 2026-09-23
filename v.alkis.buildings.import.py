@@ -639,7 +639,7 @@ def main():
     file_federal_state = options["file"]
     load_region = flags["r"]
     local_data_dir = options["local_data_dir"]
-    dldir = options["DLDIR"]
+    DLDIR = options["dldir"]
     OUTPUT_ALKIS_TEMP = f"OUTPUT_ALKIS_TEMP_{PID}"
     rm_vectors.append(OUTPUT_ALKIS_TEMP)
     output_alkis = options["output"]

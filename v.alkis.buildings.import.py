@@ -134,7 +134,7 @@ def cleanup():
     if not flags["d"]:
         rm_dirs.append(DLDIR)
 
-    general_cleanup(ORIG_REGION=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs)
+    general_cleanup(orig_region=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs)
 
 
 def url_response(url):

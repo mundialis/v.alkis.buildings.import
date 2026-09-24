@@ -109,7 +109,9 @@ from grass_gis_helpers.cleanup import general_cleanup
 
 sys.path.insert(
     1,
-    os.path.join(os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"),
+    os.path.join(
+        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
+    ),
 )
 # pylint: disable=wrong-import-position
 from download_urls import (
@@ -134,7 +136,9 @@ def cleanup():
     if not flags["d"]:
         rm_dirs.append(DLDIR)
 
-    general_cleanup(orig_region=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs)
+    general_cleanup(
+        orig_region=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs
+    )
 
 
 def url_response(url):
@@ -240,7 +244,9 @@ def download_alkis_buildings_bb(aoi_map):
                 if not os.path.isfile(os.path.join(DLDIR, kbs_zip)):
                     filtered_urls.append(kbs_url)
 
-    grass.message(_(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}..."))
+    grass.message(
+        _(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}...")
+    )
     os.chdir(DLDIR)
     pool = ThreadPool(3)
     results = pool.imap_unordered(url_response, filtered_urls)
@@ -637,7 +643,9 @@ def main():
         DLDIR = grass.tempdir()
     else:
         if not os.path.exists(DLDIR):
-            grass.message(_(f"Download folder {DLDIR} does not exist. Creating it..."))
+            grass.message(
+                _(f"Download folder {DLDIR} does not exist. Creating it...")
+            )
             os.makedirs(DLDIR)
 
     # get federal state
@@ -674,7 +682,9 @@ def main():
                 aoi_map, local_data_dir, fs, output_alkis_fs
             )
         elif fs in ["BW"]:
-            grass.fatal(_(f"No local data for {fs} available. Is the path correct?"))
+            grass.fatal(
+                _(f"No local data for {fs} available. Is the path correct?")
+            )
 
         # check if federal state is supported
         if not imported_local_data:

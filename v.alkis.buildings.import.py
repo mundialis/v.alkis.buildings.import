@@ -627,18 +627,18 @@ def main():
     file_federal_state = options["file"]
     load_region = flags["r"]
     local_data_dir = options["local_data_dir"]
-    dldir = options["dldir"]
+    DLDIR = options["dldir"]
     OUTPUT_ALKIS_TEMP = f"OUTPUT_ALKIS_TEMP_{PID}"
     rm_vectors.append(OUTPUT_ALKIS_TEMP)
     output_alkis = options["output"]
 
     # temp download path, if not explicit path given
-    if not dldir:
-        dldir = grass.tempdir()
+    if not DLDIR:
+        DLDIR = grass.tempdir()
     else:
-        if not os.path.exists(dldir):
-            grass.message(_(f"Download folder {dldir} does not exist. Creating it..."))
-            os.makedirs(dldir)
+        if not os.path.exists(DLDIR):
+            grass.message(_(f"Download folder {DLDIR} does not exist. Creating it..."))
+            os.makedirs(DLDIR)
 
     # get federal state
     if file_federal_state:
@@ -653,9 +653,9 @@ def main():
         local_fs_list = os.listdir(local_data_dir)
 
     # region
-    orig_region = f"ORIG_REGION{PID}"
+    ORIG_REGION = f"ORIG_REGION{PID}"
     # save current region for setting back later in cleanup
-    grass.run_command("g.region", save=orig_region, quiet=True)
+    grass.run_command("g.region", save=ORIG_REGION, quiet=True)
 
     # loop over federal state and import data
     output_alkis_list = []

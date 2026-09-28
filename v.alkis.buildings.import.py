@@ -514,7 +514,7 @@ def change_col_text_type(map):
             )
 
 # import_shapefiles bekommt einen optionalen layer-Parameter und reicht ihn an v.import weiter (layer=None)
-def import_shapefiles(shape_files, output_alkis, aoi_map=None, layer=None):
+def import_shapefiles(shape_files, output_alkis, aoi_map=None, layer=None, where=None):
     """Import shapefiles (for Brandenburg)"""
     if aoi_map:
         grass.run_command("g.region", vector=aoi_map, quiet=True)
@@ -531,7 +531,19 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None, layer=None):
             extent="region",
             quiet=True,
         )
+        if where:
+            out_filtered = f"{out_temp}_filtered"
+            rm_vectors.append(out_filtered)
+            grass.run_command(
+                "v.extract",
+                input=out_temp,
+                where=where,
+                output=out_filtered,
+                quiet=True,
+            )
+            out_temp = out_filtered
         out_tempall.append(out_temp)
+    
         # check columns
         change_col_text_type(out_temp)
         column_list = {
@@ -780,7 +792,7 @@ def main():
                 alkis_source = download_alkis_buildings(fs, url)
 
             # import to GRASS DB
-            grass.message(_(f"Importing ALKIS buildings data  ({fs})..."))
+            grass.message((f"Importing ALKIS buildings data  ({fs})..."))
             if isinstance(alkis_source, str):
                 import_single_alkis_source(
                     alkis_source,
@@ -791,8 +803,13 @@ def main():
                 )
             else:
                 layer = "GebauedeBauwerk" if fs == "NW" else None
+                where = (
+                    "rellage IS NULL OR rellage != 'Unter der Erdoberfläche'"
+                    if fs == "NW"
+                    else None 
+                )
                 import_shapefiles(
-                    alkis_source, output_alkis_fs, aoi_map, layer=layer
+                    alkis_source, output_alkis_fs, aoi_map, layer=layer, where=where
                 )
 
     # cleanup columns of different federal state data

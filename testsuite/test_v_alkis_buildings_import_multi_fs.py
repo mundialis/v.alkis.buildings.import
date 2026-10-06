@@ -59,7 +59,7 @@ class VAlkisBuildingsImportTestMulitpleFS(VAlkisBuildingsImportTestBase):
         )
         self.assertModule(
             v_check,
-            "Using aoi_map, which is located in"
+            "Using aoi_map, which is located in "
             "multiple federal states, fails",
         )
         # Data should have following columns:
@@ -95,7 +95,7 @@ class VAlkisBuildingsImportTestMulitpleFS(VAlkisBuildingsImportTestBase):
         )
         self.assertModule(
             v_check,
-            "Using aoi_map, which is located in"
+            "Using aoi_map, which is located "
             "in Germany and the Netherlands fails",
         )
         # Data should have following columns:
@@ -132,7 +132,7 @@ class VAlkisBuildingsImportTestMulitpleFS(VAlkisBuildingsImportTestBase):
         )
         self.assertModule(
             v_check,
-            "Module fails, when file-input"
+            "Module fails, when file-input "
             "with multiple federal states given",
         )
         # Data should have following columns:

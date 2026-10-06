@@ -276,22 +276,29 @@ def download_alkis_buildings_bb(aoi_map):
     zip_files = list(pathlib.Path(DLDIR).glob(globstring))
     for zip_file in zip_files:
         zip_base_name = pathlib.Path(zip_file).name
-        shp_dir = str(pathlib.Path(DLDIR) / zip_base_name.rsplit(".", 1)[0])
-        if not pathlib.Path(shp_dir).is_dir():
-            pathlib.Path(shp_dir).mkdir(parents=True)
         if zip_base_name in kbs_zips:
-            with ZipFile(zip_file, "r") as zip_obj:
-                # Extract only building-file in download directory
-                list_of_file_names = zip_obj.namelist()
-                for file_name in list_of_file_names:
-                    # should be nutzung and nutz-nungFlurstueck
-                    if "GebauedeBauwerk" in file_name:
-                        file_path = str(pathlib.Path(shp_dir) / file_name)
-                        if not pathlib.Path(file_path).is_file():
-                            zip_obj.extract(file_name, shp_dir)
-                        if file_name.endswith(".shp"):
-                            shp_files.append(file_path)
+            shp_files.extend(extract_buildings_shapefile(zip_file))
     gs.message(_("Unzipping downloaded data."))
+    return shp_files
+
+
+def extract_buildings_shapefile(zip_file):
+    """Extract the building shape file from a downloaded ALKIS zip file."""
+    zip_base_name = pathlib.Path(zip_file).name
+    shp_dir = pathlib.Path(DLDIR) / zip_base_name.rsplit(".", 1)[0]
+    shp_dir.mkdir(parents=True, exist_ok=True)
+
+    shp_files = []
+    with ZipFile(zip_file, "r") as zip_obj:
+        for file_name in zip_obj.namelist():
+            # should be nutzung and nutz-nungFlurstueck
+            if "GebauedeBauwerk" not in file_name:
+                continue
+            file_path = shp_dir / file_name
+            if not file_path.is_file():
+                zip_obj.extract(file_name, shp_dir)
+            if file_name.endswith(".shp"):
+                shp_files.append(str(file_path))
     return shp_files
 
 
@@ -460,7 +467,7 @@ def import_shapefiles(shape_files, output_alkis, aoi_map=None) -> None:
     """Import shapefiles (for Brandenburg)."""
     if aoi_map:
         gs.run_command("g.region", vector=aoi_map, quiet=True)
-    out_tempall = list()
+    out_tempall = []
     for shape_file in shape_files:
         gs.message(_("Importing {}...").format(shape_file))
         out_temp = f"out_temp_{PID}_{pathlib.Path(shape_file).stem}"

@@ -58,4 +58,5 @@ lint.ignore = [
     "D200",     # fits-on-one-line
     "D213",     # multi-line-summary-second-line
     "PTH208",   # Use `pathlib.Path.iterdir()` instead
+    "PLW0603",  # global-statement
 ]

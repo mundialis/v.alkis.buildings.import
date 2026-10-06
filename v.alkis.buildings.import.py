@@ -149,27 +149,27 @@ def cleanup() -> None:
     )
 
 
+def download_file(url, filename):
+    """Write the content of a URL to a local file."""
+    response = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT)
+    response.raise_for_status()
+    with pathlib.Path(filename).open("wb") as file:
+        file.writelines(response.iter_content(chunk_size=8192))
+
+
 def url_response(url):
     """Download requested data and retry the download if it failed."""
-    filename_start_pos = url.rfind("/") + 1
-    filename = url[filename_start_pos:]
+    filename = url[url.rfind("/") + 1 :]
 
-    trydownload = True
-    count = 0
-    while trydownload:
+    for _ in range(MAX_DOWNLOAD_ATTEMPTS):
         try:
-            count += 1
-            response = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT)
-            response.raise_for_status()
-            with pathlib.Path(str(filename)).open("wb") as file:
-                file.writelines(response.iter_content(chunk_size=8192))
-            trydownload = False
+            download_file(url, filename)
+            break
         except Exception:
             gs.message(_("Retrying download."))
-            if count > MAX_DOWNLOAD_ATTEMPTS:
-                trydownload = False
-                gs.fatal(_("Download of {} not working.").format(url))
             sleep(10)
+    else:
+        gs.fatal(_("Download of {} not working.").format(url))
     return url
 
 

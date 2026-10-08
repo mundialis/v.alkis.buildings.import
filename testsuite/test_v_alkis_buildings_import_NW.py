@@ -20,12 +20,15 @@
 #
 #############################################################################
 
+# pylint: disable=invalid-name
 from grass.gunittest.main import test
 
 from v_alkis_buildings_import_base import VAlkisBuildingsImportTestFsBase
 
 
 class VAlkisBuildingsImportTestNW(VAlkisBuildingsImportTestFsBase):
+    """Test v.alkis.buildings.import for NW."""
+
     fs = "NW"
     federal_state = "Nordrhein-Westfalen"
 

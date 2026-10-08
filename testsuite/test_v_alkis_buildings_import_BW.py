@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+# pylint: disable=invalid-name
 import os
 from grass.gunittest.main import test
 
@@ -27,6 +28,8 @@ from v_alkis_buildings_import_base import VAlkisBuildingsImportTestFsBase
 
 
 class VAlkisBuildingsImportTestBW(VAlkisBuildingsImportTestFsBase):
+    """Test v.alkis.buildings.import for BW."""
+
     fs = "BW"
     federal_state = "Baden-Württemberg"
     alkis_data_dir = os.path.join("data", "ALKIS")

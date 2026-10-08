@@ -5,3 +5,6 @@ numpy
 py7zr<1.1
 pyzstd<0.19
 requests
+# timezone database for the Hessen download URLs, needed where the system
+# does not provide one, for example on Alpine
+tzdata

@@ -134,6 +134,9 @@ BERLIN_TZ = ZoneInfo("Europe/Berlin")
 
 NW_BASE_URL = "https://www.opengeodata.nrw.de/produkte/geobasis/lk/akt/gru_vereinfacht_gpkg/"
 
+# district key prefix of Nordrhein-Westfalen
+NW_AGS_PREFIX = "05"
+
 HTTP_OK = 200
 MAX_DOWNLOAD_ATTEMPTS = 10
 DOWNLOAD_TIMEOUT = 800
@@ -238,7 +241,13 @@ def download_alkis_buildings_nw(aoi_map):
         rm_vectors.append(aoi_map)
         gs.run_command("v.in.region", output=aoi_map)
 
-    krs_list = administrative_boundaries(aoi_map)
+    # the AOI can span several federal states, but only NRW districts are
+    # available from the NRW portal. NRW district keys start with "05".
+    krs_list = [
+        krs
+        for krs in administrative_boundaries(aoi_map)
+        if krs.split("|")[1].startswith(NW_AGS_PREFIX)
+    ]
 
     gpkg_files = []
     for krs in krs_list:
@@ -404,7 +413,7 @@ def import_single_alkis_source(
         # shapefile with missing .prj file, CRS is EPSG:25832
         alkis_source_fixed = alkis_source[:-4] + "_proj.gpkg"
         popen_s = gs.Popen(
-            (
+            [
                 "ogr2ogr",
                 "-a_srs",
                 "EPSG:25832",
@@ -414,7 +423,7 @@ def import_single_alkis_source(
                 "PROMOTE_TO_MULTI",
                 alkis_source_fixed,
                 alkis_source,
-            ),
+            ],
         )
         returncode = popen_s.wait()
         if returncode != 0:
@@ -597,6 +606,8 @@ def import_shapefiles(
 
 def patch_vector(vector_list, output) -> None:
     """Patch vectors from several federal states into one vector."""
+    if not vector_list:
+        gs.fatal(_("No ALKIS building data found for the requested area."))
     # patch output from several federal states
     if len(vector_list) > 1:
         gs.run_command(
@@ -674,21 +685,30 @@ def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
 
 
 def cleanup_columns(out_alkis) -> None:
-    """Remove additional columns."""
+    """Remove additional columns and normalize the ALKIS columns to TEXT."""
     cols = gs.vector_columns(out_alkis)
-    # NRW uses AGS_0, the other federal states use AGS. Keep the one the
-    # imported data actually provides and always recreate AGS, OI and GFK.
-    ags_col = "AGS_0" if "AGS_0" in cols else "AGS"
-    rm_cols = [col for col in cols if col not in {"cat", ags_col, "OI", "GFK"}]
+    # The source data is inconsistent: NRW provides AGS_0, the other federal
+    # states AGS, and Hessen uses lower case names. Match case insensitively
+    # and recreate the columns under the canonical names, because SQLite
+    # treats column names case insensitively and would reject the duplicates.
+    lowered = {col.lower(): col for col in cols}
+    ags_col = "AGS_0" if "ags_0" in lowered else "AGS"
+
+    rm_cols = [
+        col
+        for col in cols
+        if col.lower() not in {"cat", "ags", "ags_0", "oi", "gfk"}
+    ]
     for needed_col in [ags_col, "OI", "GFK"]:
+        existing = lowered.get(needed_col.lower())
         tmp_col = None
-        if needed_col in cols:
-            tmp_col = f"{needed_col}_tmp"
+        if existing:
+            tmp_col = f"{existing}_tmp"
             rm_cols.append(tmp_col)
             gs.run_command(
                 "v.db.renamecolumn",
                 map=out_alkis,
-                column=f"{needed_col},{tmp_col}",
+                column=f"{existing},{tmp_col}",
                 quiet=True,
             )
         gs.run_command(

@@ -22,6 +22,8 @@
 
 """Tests the v.alkis.buildings.import addon for Sachsen."""
 
+import pathlib
+
 from grass.gunittest.main import test
 from v_alkis_buildings_import_base import VAlkisBuildingsImportTestFsBase
 
@@ -31,8 +33,7 @@ class VAlkisBuildingsImportTestSN(VAlkisBuildingsImportTestFsBase):
 
     fs = "SN"
     federal_state = "Sachsen"
-    east = "w+19200"
-    west = "w+19100"
+    alkis_data_dir = str(pathlib.Path("data") / "ALKIS")
 
     def test_option_aoi_map(self) -> None:
         """Test aoi_map as optional input."""

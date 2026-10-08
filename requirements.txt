@@ -1,6 +1,7 @@
 grass-gis-helpers
 numpy
-py7zr
-pyzstd
-zstd
+# py7zr 1.1 and later import compression.zstd on Python 3.14, whose _zstd
+# C extension is not available in all GRASS build environments
+py7zr<1.1
+pyzstd<0.19
 requests

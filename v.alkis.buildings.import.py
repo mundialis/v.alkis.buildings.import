@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #
+# pylint: disable=too-many-lines
 ############################################################################
 #
 # MODULE:      v.alkis.buildings.import
@@ -131,6 +132,8 @@ rm_vectors = []
 # The Hessen download URLs embed a date in German local time.
 BERLIN_TZ = ZoneInfo("Europe/Berlin")
 
+NW_BASE_URL = "https://www.opengeodata.nrw.de/produkte/geobasis/lk/akt/gru_vereinfacht_gpkg/"
+
 HTTP_OK = 200
 MAX_DOWNLOAD_ATTEMPTS = 10
 DOWNLOAD_TIMEOUT = 800
@@ -213,13 +216,12 @@ def administrative_boundaries(aoi_name):
     )
 
     # get district of AOI/region-polygon
-    krs_list = list(
-        gs.parse_command(
-            "v.db.select",
-            map=districts_vec,
-            columns="GEN",
-            flags="c",
-        ).keys(),
+    # the keys are "GEN|AGS_0" pairs, needed to build the NRW download URLs
+    krs_list = gs.parse_command(
+        "v.db.select",
+        map=districts_vec,
+        columns="GEN,AGS_0",
+        flags="c",
     )
     gs.verbose(
         _("Districts overlapping with AOI/region: {}").format(
@@ -227,6 +229,45 @@ def administrative_boundaries(aoi_name):
         ),
     )
     return krs_list
+
+
+def download_alkis_buildings_nw(aoi_map):
+    """Download simplified ALKIS building data for NRW."""
+    if not aoi_map:
+        aoi_map = f"aoi_region_{gs.tempname(12)}"
+        rm_vectors.append(aoi_map)
+        gs.run_command("v.in.region", output=aoi_map)
+
+    krs_list = administrative_boundaries(aoi_map)
+
+    gpkg_files = []
+    for krs in krs_list:
+        gen, ags = krs.split("|")
+        # the server encodes spaces in the district name as underscores
+        name = gen.replace(" ", "_")
+        filename = f"gru_vereinf_{ags}_{name}_EPSG25832_GeoPackage.zip"
+        url = NW_BASE_URL + filename
+        gs.message(_("Downloading {}...").format(filename))
+
+        zip_path = pathlib.Path(DLDIR) / filename
+        if not zip_path.is_file():
+            response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
+            if response.status_code != HTTP_OK:
+                gs.fatal(
+                    _("Download of NRW ALKIS data failed: {}").format(url),
+                )
+            with zip_path.open("wb") as file:
+                file.write(response.content)
+
+        with ZipFile(zip_path, "r") as zip_obj:
+            zip_obj.extractall(DLDIR)
+
+        gpkg_path = str(
+            pathlib.Path(DLDIR) / filename.replace("_GeoPackage.zip", ".gpkg"),
+        )
+        gpkg_files.append(gpkg_path)
+
+    return gpkg_files
 
 
 def download_alkis_buildings_bb(aoi_map):
@@ -243,8 +284,9 @@ def download_alkis_buildings_bb(aoi_map):
     kbs_zips = []
     all_urls_bl = download_dict["Brandenburg"]
     for krs in krs_list:
+        gen = krs.split("|")[0]
         for key, val in BB_DISTRICTS.items():
-            if val == krs:
+            if val == gen:
                 kbs_url = next(
                     url
                     for url in all_urls_bl
@@ -383,6 +425,8 @@ def import_single_alkis_source(
     if f_state == "Thüringen":
         snap = 0.1
 
+    # the NRW GeoPackage holds several layers, only the buildings are needed
+    layer = "GebauedeBauwerk" if f_state == "Nordrhein-Westfalen" else None
     if aoi_map:
         # set region to aoi_map
         gs.run_command("g.region", vector=aoi_map, quiet=True)
@@ -391,6 +435,7 @@ def import_single_alkis_source(
             input=alkis_source_fixed,
             output=OUTPUT_ALKIS_TEMP,
             snap=snap,
+            layer=layer,
             extent="region",
             quiet=True,
             overwrite=True,
@@ -409,6 +454,7 @@ def import_single_alkis_source(
             input=alkis_source_fixed,
             output=output_alkis,
             snap=snap,
+            layer=layer,
             extent="region",
             quiet=True,
         )
@@ -418,6 +464,7 @@ def import_single_alkis_source(
             input=alkis_source_fixed,
             output=output_alkis,
             snap=snap,
+            layer=layer,
             quiet=True,
         )
 
@@ -463,23 +510,51 @@ def change_col_text_type(map) -> None:
             )
 
 
-def import_shapefiles(shape_files, output_alkis, aoi_map=None) -> None:
-    """Import shapefiles (for Brandenburg)."""
+def import_shapefiles(
+    shape_files,
+    output_alkis,
+    aoi_map=None,
+    layer=None,
+    where=None,
+) -> None:
+    """Import shapefiles (for Brandenburg).
+
+    Args:
+        shape_files: paths of the shape files or GeoPackages to import
+        output_alkis: name of the imported vector map
+        aoi_map: name of the AOI map to clip the result to, all if None
+        layer: name of the layer to import, all layers if None
+        where: SQL where clause used to filter the imported features
+    """
     if aoi_map:
         gs.run_command("g.region", vector=aoi_map, quiet=True)
     out_tempall = []
-    for shape_file in shape_files:
+    for i, shape_file in enumerate(shape_files):
         gs.message(_("Importing {}...").format(shape_file))
-        out_temp = f"out_temp_{PID}_{pathlib.Path(shape_file).stem}"
+        # NRW district names contain characters that GRASS map names do not allow
+        out_temp = f"out_temp_{PID}_{i}"
         rm_vectors.append(out_temp)
         gs.run_command(
             "v.import",
             input=shape_file,
             output=out_temp,
+            layer=layer,
             extent="region",
             quiet=True,
         )
+        if where:
+            out_filtered = f"{out_temp}_filtered"
+            rm_vectors.append(out_filtered)
+            gs.run_command(
+                "v.extract",
+                input=out_temp,
+                where=where,
+                output=out_filtered,
+                quiet=True,
+            )
+            out_temp = out_filtered
         out_tempall.append(out_temp)
+
         # check columns
         change_col_text_type(out_temp)
         column_list = {
@@ -601,8 +676,11 @@ def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
 def cleanup_columns(out_alkis) -> None:
     """Remove additional columns."""
     cols = gs.vector_columns(out_alkis)
-    rm_cols = [col for col in cols if col not in {"cat", "AGS", "OI", "GFK"}]
-    for needed_col in ["AGS", "OI", "GFK"]:
+    # NRW uses AGS_0, the other federal states use AGS. Keep the one the
+    # imported data actually provides and always recreate AGS, OI and GFK.
+    ags_col = "AGS_0" if "AGS_0" in cols else "AGS"
+    rm_cols = [col for col in cols if col not in {"cat", ags_col, "OI", "GFK"}]
+    for needed_col in [ags_col, "OI", "GFK"]:
         tmp_col = None
         if needed_col in cols:
             tmp_col = f"{needed_col}_tmp"
@@ -731,7 +809,9 @@ def main() -> None:
             #   + gs.message: see above
             # in case multiple federal states given, and at least one of them is NRW:
             #   import data only for NRW area
-            if fs == "BB":
+            if fs == "NW":
+                alkis_source = download_alkis_buildings_nw(aoi_map)
+            elif fs == "BB":
                 alkis_source = download_alkis_buildings_bb(aoi_map)
             else:
                 alkis_source = download_alkis_buildings(fs, url)
@@ -747,7 +827,19 @@ def main() -> None:
                     federal_state,
                 )
             else:
-                import_shapefiles(alkis_source, output_alkis_fs, aoi_map)
+                layer = "GebauedeBauwerk" if fs == "NW" else None
+                where = (
+                    "rellage IS NULL OR rellage != 'Unter der Erdoberfläche'"
+                    if fs == "NW"
+                    else None
+                )
+                import_shapefiles(
+                    alkis_source,
+                    output_alkis_fs,
+                    aoi_map,
+                    layer=layer,
+                    where=where,
+                )
 
     # cleanup columns of different federal state data
     for out_alkis in output_alkis_list:

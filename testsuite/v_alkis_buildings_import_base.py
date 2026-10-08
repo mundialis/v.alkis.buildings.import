@@ -51,6 +51,7 @@ class VAlkisBuildingsImportTestBase(TestCase):
     @classmethod
     # pylint: disable=invalid-name
     def setUpClass(cls):
+        """Create temporary location and save the region."""
         # switch location
         _, _, cls.GISDBASE, cls.TGTGISRC = get_current_location()
         cls.TMPLOC, cls.SRCGISRC = create_tmp_location(epsg=25832)
@@ -60,6 +61,7 @@ class VAlkisBuildingsImportTestBase(TestCase):
     @classmethod
     # pylint: disable=invalid-name
     def tearDownClass(cls):
+        """Remove AOI and clean up the temporary location."""
         # remove AOI
         if grass.find_file(name=cls.aoi_map, element="vector")["file"]:
             cls.runModule(

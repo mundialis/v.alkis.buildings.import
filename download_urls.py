@@ -37,8 +37,8 @@ URLS = {
     "/lk/akt/hu_shp/hu_EPSG4647_Shape.zip",
     "RP": None,
     "SL": None,
-    "SN": "https://geocloud.landesvermessung.sachsen.de/index.php/s"
-    "/YgBfai4gXoiExJx/download?path=%2F&files=hu_sn_shape.zip",
+    "SN": "https://geocloud.landesvermessung.sachsen.de/public.php"
+    "/dav/files/AcAqRn4k9Sz8ZZx/hu_sn_shape.zip",
     "ST": None,
     "SH": None,
     "TH": "https://geoportal.geoportal-th.de/hausko_umr/HU-TH.zip",
@@ -57,7 +57,7 @@ BUILDINGS_FILENAMES = {
     "NW": "hu_shp.shp",
     "RP": None,
     "SL": None,
-    "SN": "hu_sn_gebaeude_20240118.shp",
+    "SN": "hu_sn_gebaeude_20260702.shp",
     "ST": None,
     "SH": None,
     "TH": "gebaeude-th.shp",

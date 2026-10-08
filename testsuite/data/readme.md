@@ -30,3 +30,10 @@ Test text-file containing multiple federal state names
 ## ALKIS/BW/ALKIS_testGebaeude.gpkg
 
 Polygons generated in BW to simulate local ALKIS buildings data
+
+## ALKIS/SN/hu_sn_gebaeude_subset.gpkg
+
+Subset of the Sachsen Hausumringe data (hu_sn_gebaeude_20260702.shp), cut out
+around the SN test area, to simulate local ALKIS buildings data. The full
+Sachsen dataset holds more than two million buildings and is therefore not
+downloaded during the tests.

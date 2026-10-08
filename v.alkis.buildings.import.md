@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD041 -->
 ## DESCRIPTION
 
 *v.alkis.buildings.import* downloads ALKIS building data and imports

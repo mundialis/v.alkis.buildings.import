@@ -20,9 +20,9 @@
 #
 #############################################################################
 
-# pylint: disable=invalid-name
-from grass.gunittest.main import test
+"""Tests the v.alkis.buildings.import addon for Nordrhein-Westfalen."""
 
+from grass.gunittest.main import test
 from v_alkis_buildings_import_base import VAlkisBuildingsImportTestFsBase
 
 
@@ -32,16 +32,16 @@ class VAlkisBuildingsImportTestNW(VAlkisBuildingsImportTestFsBase):
     fs = "NW"
     federal_state = "Nordrhein-Westfalen"
 
-    def test_option_aoi_map(self):
-        """Tests aoi_map as optional input"""
+    def test_option_aoi_map(self) -> None:
+        """Test aoi_map as optional input."""
         self.option_aoi_map()
 
-    def test_flag(self):
-        """Tests region as AOI input"""
+    def test_flag(self) -> None:
+        """Test the region as AOI input."""
         self.flag()
 
-    def test_file_input_single(self):
-        """Tests aoi_map as optional input and federal state input file"""
+    def test_file_input_single(self) -> None:
+        """Test aoi_map and the federal state input file."""
         self.file_input_single()
 
 

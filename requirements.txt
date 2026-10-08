@@ -1,6 +1,10 @@
 grass-gis-helpers
 numpy
-py7zr
-pyzstd
-zstd
+# py7zr 1.1 and later import compression.zstd on Python 3.14, whose _zstd
+# C extension is not available in all GRASS build environments
+py7zr<1.1
+pyzstd<0.19
 requests
+# timezone database for the Hessen download URLs, needed where the system
+# does not provide one, for example on Alpine
+tzdata

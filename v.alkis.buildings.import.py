@@ -93,8 +93,8 @@
 # %end
 
 import atexit
-import glob
 import os
+import pathlib
 import sys
 import zipfile
 from datetime import datetime, timedelta
@@ -102,17 +102,16 @@ from io import BytesIO
 from multiprocessing.pool import ThreadPool
 from time import sleep
 from zipfile import ZipFile
+from zoneinfo import ZoneInfo
 
-import grass.script as grass
+import grass.script as gs
 import py7zr
 import requests
 from grass_gis_helpers.cleanup import general_cleanup
 
 sys.path.insert(
     1,
-    os.path.join(
-        os.path.dirname(sys.path[0]), "etc", "v.alkis.buildings.import"
-    ),
+    str(pathlib.Path(sys.path[0]).parent / "etc" / "v.alkis.buildings.import"),
 )
 # pylint: disable=wrong-import-position
 from download_urls import (
@@ -127,68 +126,81 @@ ORIG_REGION = None
 OUTPUT_ALKIS_TEMP = None
 DLDIR = None
 PID = None
-currentpath = os.getcwd()
+currentpath = pathlib.Path.cwd()
 rm_vectors = []
 
+# The Hessen download URLs embed a date in German local time.
+BERLIN_TZ = ZoneInfo("Europe/Berlin")
 
-def cleanup():
-    """removes created objects when finished or failed"""
+NW_BASE_URL = "https://www.opengeodata.nrw.de/produkte/geobasis/lk/akt/gru_vereinfacht_gpkg/"
+
+# district key prefix of Nordrhein-Westfalen
+NW_AGS_PREFIX = "05"
+
+HTTP_OK = 200
+MAX_DOWNLOAD_ATTEMPTS = 10
+DOWNLOAD_TIMEOUT = 800
+
+
+def cleanup() -> None:
+    """Remove created objects when finished or failed."""
     rm_dirs = []
     if not flags["d"]:
         rm_dirs.append(DLDIR)
 
     general_cleanup(
-        orig_region=ORIG_REGION, rm_vectors=rm_vectors, rm_dirs=rm_dirs
+        orig_region=ORIG_REGION,
+        rm_vectors=rm_vectors,
+        rm_dirs=rm_dirs,
     )
 
 
-def url_response(url):
-    """downloads requested data and retries download if failed"""
-    filename_start_pos = url.rfind("/") + 1
-    filename = url[filename_start_pos:]
+def download_file(url, filename):
+    """Write the content of a URL to a local file."""
+    response = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT)
+    response.raise_for_status()
+    with pathlib.Path(filename).open("wb") as file:
+        file.writelines(response.iter_content(chunk_size=8192))
 
-    trydownload = True
-    count = 0
-    while trydownload:
+
+def url_response(url):
+    """Download requested data and retry the download if it failed."""
+    filename = url[url.rfind("/") + 1 :]
+
+    for _ in range(MAX_DOWNLOAD_ATTEMPTS):
         try:
-            count += 1
-            response = requests.get(url, stream=True, timeout=800)
-            response.raise_for_status()
-            with open(str(filename), "wb") as file:
-                file.writelines(response.iter_content(chunk_size=8192))
-            trydownload = False
+            download_file(url, filename)
+            break
         except Exception:
-            grass.message(_("retry download"))
-            if count > 10:
-                trydownload = False
-                grass.fatal(f"download of {url} not working")
+            gs.message(_("Retrying download."))
             sleep(10)
+    else:
+        gs.fatal(_("Download of {} not working.").format(url))
     return url
 
 
 def administrative_boundaries(aoi_name):
-    """Returns list of districts overlapping with AOI/region"""
+    """Return a list of districts overlapping with AOI/region."""
     # url of administrative boundaries
     url = (
         "https://daten.gdz.bkg.bund.de/produkte/vg/vg5000_0101/"
         "aktuell/vg5000_01-01.utm32s.shape.ebenen.zip"
     )
     # file of administrative boundaries in zip
-    filename = os.path.join(
-        "vg5000_ebenen_0101",
-        "VG5000_KRS.shp",
-    )
+    filename = "vg5000_ebenen_0101/VG5000_KRS.shp"
 
     # check if URL is reachable
-    response = requests.get(url)
-    if not response.status_code == 200:
-        sys.exit(
-            "v.alkis.buildings.import was stopped. The data of the"
-            "district boundaries are currently not available."
+    response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
+    if response.status_code != HTTP_OK:
+        gs.fatal(
+            _(
+                "v.alkis.buildings.import was stopped. The data of the"
+                " district boundaries are currently not available.",
+            ),
         )
 
     # download and import administrative boundaries
-    grass.run_command(
+    gs.run_command(
         "g.region",
         vect=aoi_name,
         quiet=True,
@@ -197,7 +209,7 @@ def administrative_boundaries(aoi_name):
     vsi_command = f"/vsizip/vsicurl/{url}/{filename}"
     districts_vec = f"all_districts_vec_{os.getpid()}"
     rm_vectors.append(districts_vec)
-    grass.run_command(
+    gs.run_command(
         "v.import",
         input=vsi_command,
         output=districts_vec,
@@ -207,104 +219,104 @@ def administrative_boundaries(aoi_name):
     )
 
     # get district of AOI/region-polygon
-    krs_list = grass.parse_command(
+    # the keys are "GEN|AGS_0" pairs, needed to build the NRW download URLs
+    krs_list = gs.parse_command(
         "v.db.select",
         map=districts_vec,
         columns="GEN,AGS_0",
         flags="c",
     )
-
-    grass.message(krs_list)
+    gs.verbose(
+        _("Districts overlapping with AOI/region: {}").format(
+            ", ".join(krs_list),
+        ),
+    )
     return krs_list
 
 
 def download_alkis_buildings_nw(aoi_map):
     """Download simplified ALKIS building data for NRW."""
     if not aoi_map:
-        aoi_map = f"aoi_region_{grass.tempname(12)}"
+        aoi_map = f"aoi_region_{gs.tempname(12)}"
         rm_vectors.append(aoi_map)
-        grass.run_command(
-            "v.in.region",
-            output=aoi_map,
-        )
+        gs.run_command("v.in.region", output=aoi_map)
 
-    krs_list = administrative_boundaries(aoi_map)
-
-    nw_base_url = (
-        "https://www.opengeodata.nrw.de/produkte/geobasis/"
-        "lk/akt/gru_vereinfacht_gpkg/"
-    )
+    # the AOI can span several federal states, but only NRW districts are
+    # available from the NRW portal. NRW district keys start with "05".
+    krs_list = [
+        krs
+        for krs in administrative_boundaries(aoi_map)
+        if krs.split("|")[1].startswith(NW_AGS_PREFIX)
+    ]
 
     gpkg_files = []
-
     for krs in krs_list:
         gen, ags = krs.split("|")
+        # the server encodes spaces in the district name as underscores
+        name = gen.replace(" ", "_")
+        filename = f"gru_vereinf_{ags}_{name}_EPSG25832_GeoPackage.zip"
+        url = NW_BASE_URL + filename
+        gs.message(_("Downloading {}...").format(filename))
 
-        filename = f"gru_vereinf_{ags}_{gen}_" "EPSG25832_GeoPackage.zip"
-
-        url = nw_base_url + filename
-
-        grass.message(_(f"Downloading {filename}..."))
-
-        zip_path = os.path.join(DLDIR, filename)
-
-        if not os.path.isfile(zip_path):
-            response = requests.get(url, timeout=800)
-            if response.status_code != 200:
-                grass.fatal(_(f"Download of NRW ALKIS data failed: " f"{url}"))
-
-            with open(zip_path, "wb") as file:
+        zip_path = pathlib.Path(DLDIR) / filename
+        if not zip_path.is_file():
+            response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
+            if response.status_code != HTTP_OK:
+                gs.fatal(
+                    _("Download of NRW ALKIS data failed: {}").format(url),
+                )
+            with zip_path.open("wb") as file:
                 file.write(response.content)
 
-        # todo: Filter nach gebäudebauwerk und extrahiere nur diesen layer
         with ZipFile(zip_path, "r") as zip_obj:
             zip_obj.extractall(DLDIR)
 
-        gpkg_name = filename.replace(
-            "_GeoPackage.zip",
-            ".gpkg",
+        gpkg_path = str(
+            pathlib.Path(DLDIR) / filename.replace("_GeoPackage.zip", ".gpkg"),
         )
-        gpkg_path = os.path.join(DLDIR, gpkg_name)
-
         gpkg_files.append(gpkg_path)
 
     return gpkg_files
 
 
 def download_alkis_buildings_bb(aoi_map):
-    """Download and prepare data for Brandenburg"""
+    """Download and prepare data for Brandenburg."""
     # TODO check if data area already downloaded
 
     # select Landkreise
     if not aoi_map:
-        aoi_map = f"aoi_region_{grass.tempname(12)}"
+        aoi_map = f"aoi_region_{gs.tempname(12)}"
         rm_vectors.append(aoi_map)
-        grass.run_command("v.in.region", output=aoi_map)
+        gs.run_command("v.in.region", output=aoi_map)
     krs_list = administrative_boundaries(aoi_map)
     filtered_urls = []
     kbs_zips = []
     all_urls_bl = download_dict["Brandenburg"]
     for krs in krs_list:
+        gen = krs.split("|")[0]
         for key, val in BB_DISTRICTS.items():
-            if val == krs:
-                kbs_url = [
+            if val == gen:
+                kbs_url = next(
                     url
                     for url in all_urls_bl
                     if f"alkis_shape_{key.lower()}.zip" in url
-                ][0]
-                kbs_zip = os.path.basename(kbs_url)
+                )
+                kbs_zip = pathlib.Path(kbs_url).name
                 kbs_zips.append(kbs_zip)
-                if not os.path.isfile(os.path.join(DLDIR, kbs_zip)):
+                if not (pathlib.Path(DLDIR) / kbs_zip).is_file():
                     filtered_urls.append(kbs_url)
 
-    grass.message(
-        _(f"Downloading {len(filtered_urls)} files from {len(kbs_zips)}...")
+    gs.message(
+        _("Downloading {} files from {}...").format(
+            len(filtered_urls),
+            len(kbs_zips),
+        ),
     )
     os.chdir(DLDIR)
     pool = ThreadPool(3)
     results = pool.imap_unordered(url_response, filtered_urls)
     for result in results:
-        print(result)
+        gs.verbose(result)
     pool.close()
     pool.join()
     os.chdir(currentpath)
@@ -312,60 +324,68 @@ def download_alkis_buildings_bb(aoi_map):
     # for Brandenburg shape files
     shp_files = []
     globstring = "alkis_shape_*.zip"
-    zip_files = glob.glob(os.path.join(DLDIR, globstring))
+    zip_files = list(pathlib.Path(DLDIR).glob(globstring))
     for zip_file in zip_files:
-        zip_base_name = os.path.basename(zip_file)
-        shp_dir = os.path.join(DLDIR, zip_base_name.rsplit(".", 1)[0])
-        if not os.path.isdir(shp_dir):
-            os.makedirs(shp_dir)
+        zip_base_name = pathlib.Path(zip_file).name
         if zip_base_name in kbs_zips:
-            with ZipFile(zip_file, "r") as zip_obj:
-                # Extract only building-file in download directory
-                list_of_file_names = zip_obj.namelist()
-                for file_name in list_of_file_names:
-                    # should be nutzung and nutz-nungFlurstueck
-                    if "GebauedeBauwerk" in file_name:
-                        file_path = os.path.join(shp_dir, file_name)
-                        if not os.path.isfile(file_path):
-                            zip_obj.extract(file_name, shp_dir)
-                        if file_name.endswith(".shp"):
-                            shp_files.append(file_path)
-    grass.message(_("unzip downloaded zip folder"))
+            shp_files.extend(extract_buildings_shapefile(zip_file))
+    gs.message(_("Unzipping downloaded data."))
+    return shp_files
+
+
+def extract_buildings_shapefile(zip_file):
+    """Extract the building shape file from a downloaded ALKIS zip file."""
+    zip_base_name = pathlib.Path(zip_file).name
+    shp_dir = pathlib.Path(DLDIR) / zip_base_name.rsplit(".", 1)[0]
+    shp_dir.mkdir(parents=True, exist_ok=True)
+
+    shp_files = []
+    with ZipFile(zip_file, "r") as zip_obj:
+        for file_name in zip_obj.namelist():
+            # should be nutzung and nutz-nungFlurstueck
+            if "GebauedeBauwerk" not in file_name:
+                continue
+            file_path = shp_dir / file_name
+            if not file_path.is_file():
+                zip_obj.extract(file_name, shp_dir)
+            if file_name.endswith(".shp"):
+                shp_files.append(str(file_path))
     return shp_files
 
 
 def download_alkis_buildings(fs, url):
-    """download alkis building data"""
+    """Download ALKIS building data."""
     # create tempdirectory for unzipping files
     # file of interest in zip
     buildings_filename = BUILDINGS_FILENAMES[fs]
-    alkis_source = os.path.join(DLDIR, buildings_filename)
-    if not os.path.isfile(alkis_source):
-        grass.message(_(f"Downloading ALKIS building data ({fs})..."))
+    alkis_source = str(pathlib.Path(DLDIR) / buildings_filename)
+    if not pathlib.Path(alkis_source).is_file():
+        gs.message(_("Downloading ALKIS building data ({})...").format(fs))
         if fs == "HE":
             # insert current date into download URL
             # try dates of yesterday and tomorrow if it's not working
-            today = datetime.now().strftime("%Y%m%d")
-            yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
-            tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+            now = datetime.now(BERLIN_TZ)
+            today = now.strftime("%Y%m%d")
+            yesterday = (now - timedelta(days=1)).strftime("%Y%m%d")
+            tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")
             dates = [today, yesterday, tomorrow]
             url = url.replace("DATE", today)
-            response = requests.get(url)
-            if not response.status_code == 200:
+            response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
+            if response.status_code != HTTP_OK:
                 url = url.replace(dates[0], dates[1])
-                response = requests.get(url)
-            if not response.status_code == 200:
+                response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
+            if response.status_code != HTTP_OK:
                 url = url.replace(dates[1], dates[2])
-                response = requests.get(url)
+                response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
         else:
-            response = requests.get(url)
+            response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
 
-        if not response.status_code == 200:
-            grass.fatal(
+        if response.status_code != HTTP_OK:
+            gs.fatal(
                 _(
-                    "v.alkis.buildings.import was stopped."
-                    "The data are currently not available."
-                )
+                    "v.alkis.buildings.import was stopped. The data are"
+                    " currently not available.",
+                ),
             )
         # unzip boundaries
         if url.endswith(".zip"):
@@ -375,21 +395,25 @@ def download_alkis_buildings(fs, url):
             zip_file = py7zr.SevenZipFile(BytesIO(response.content))
             zip_file.extractall(DLDIR)
         else:
-            grass.fatal(_("Zip format not (yet) supported."))
+            gs.fatal(_("Zip format not (yet) supported."))
 
     return alkis_source
 
 
 def import_single_alkis_source(
-    alkis_source, aoi_map, load_region, output_alkis, f_state
-):
-    """Importing single ALKIS source"""
+    alkis_source,
+    aoi_map,
+    load_region,
+    output_alkis,
+    f_state,
+) -> None:
+    """Import a single ALKIS source."""
     alkis_source_fixed = alkis_source
     if f_state == "Hessen":
         # shapefile with missing .prj file, CRS is EPSG:25832
         alkis_source_fixed = alkis_source[:-4] + "_proj.gpkg"
-        popen_s = grass.Popen(
-            (
+        popen_s = gs.Popen(
+            [
                 "ogr2ogr",
                 "-a_srs",
                 "EPSG:25832",
@@ -399,33 +423,23 @@ def import_single_alkis_source(
                 "PROMOTE_TO_MULTI",
                 alkis_source_fixed,
                 alkis_source,
-            )
+            ],
         )
         returncode = popen_s.wait()
         if returncode != 0:
-            grass.fatal(_("Assigning CRS to ALKIS input data failed!"))
-            sys.exit()
+            gs.fatal(_("Assigning CRS to ALKIS input data failed!"))
 
     # snap tolerance = 0.1 to remove overlapping areas in some source datasets
     snap = -1
     if f_state == "Thüringen":
         snap = 0.1
 
-    # Layer definition: Extract "GebauedeBauwerk" from gpkg
-    layer = None
-    if f_state == "Nordrhein-Westfalen":
-        layer = "GebauedeBauwerk"
-    grass.message(_(f"{layer}"))
+    # the NRW GeoPackage holds several layers, only the buildings are needed
+    layer = "GebauedeBauwerk" if f_state == "Nordrhein-Westfalen" else None
     if aoi_map:
         # set region to aoi_map
-        grass.run_command("g.region", vector=aoi_map, quiet=True)
-        # if grass.find_file(
-        #     name=OUTPUT_ALKIS_TEMP, element="vector"
-        # )["file"] != "":
-        #     import pdb; pdb.set_trace()
-        #     OUTPUT_ALKIS_TEMP += "_2"
-        #     rm_vectors.append(OUTPUT_ALKIS_TEMP)
-        grass.run_command(
+        gs.run_command("g.region", vector=aoi_map, quiet=True)
+        gs.run_command(
             "v.import",
             input=alkis_source_fixed,
             output=OUTPUT_ALKIS_TEMP,
@@ -435,7 +449,7 @@ def import_single_alkis_source(
             quiet=True,
             overwrite=True,
         )
-        grass.run_command(
+        gs.run_command(
             "v.clip",
             input=OUTPUT_ALKIS_TEMP,
             clip=aoi_map,
@@ -444,7 +458,7 @@ def import_single_alkis_source(
             quiet=True,
         )
     elif load_region:
-        grass.run_command(
+        gs.run_command(
             "v.import",
             input=alkis_source_fixed,
             output=output_alkis,
@@ -454,7 +468,7 @@ def import_single_alkis_source(
             quiet=True,
         )
     else:
-        grass.run_command(
+        gs.run_command(
             "v.import",
             input=alkis_source_fixed,
             output=output_alkis,
@@ -464,25 +478,25 @@ def import_single_alkis_source(
         )
 
 
-def change_col_text_type(map):
-    """Change column type from CHARACTER to TEXT"""
+def change_col_text_type(map) -> None:
+    """Change column type from CHARACTER to TEXT."""
     column_list = {
         col.split("|")[1]: col.split("|")[0]
-        for col in grass.parse_command("v.info", map=map, flags="cg")
+        for col in gs.parse_command("v.info", map=map, flags="cg")
     }
 
     for col, col_type in column_list.items():
         if col_type == "CHARACTER":
             tmp_col = f"{col}_tmp_{PID}"
 
-            grass.run_command(
+            gs.run_command(
                 "v.db.addcolumn",
                 map=map,
                 columns=f"{tmp_col} TEXT",
                 quiet=True,
             )
 
-            grass.run_command(
+            gs.run_command(
                 "v.db.update",
                 map=map,
                 column=tmp_col,
@@ -490,14 +504,14 @@ def change_col_text_type(map):
                 quiet=True,
             )
 
-            grass.run_command(
+            gs.run_command(
                 "v.db.dropcolumn",
                 map=map,
                 column=col,
                 quiet=True,
             )
 
-            grass.run_command(
+            gs.run_command(
                 "v.db.renamecolumn",
                 map=map,
                 column=f"{tmp_col},{col}",
@@ -505,33 +519,42 @@ def change_col_text_type(map):
             )
 
 
-# import_shapefiles bekommt einen optionalen layer-Parameter und reicht ihn an v.import weiter (layer=None)
 def import_shapefiles(
-    shape_files, output_alkis, aoi_map=None, layer=None, where=None
-):
-    """Import shapefiles (for Brandenburg)"""
+    shape_files,
+    output_alkis,
+    aoi_map=None,
+    layer=None,
+    where=None,
+) -> None:
+    """Import shapefiles (for Brandenburg).
+
+    Args:
+        shape_files: paths of the shape files or GeoPackages to import
+        output_alkis: name of the imported vector map
+        aoi_map: name of the AOI map to clip the result to, all if None
+        layer: name of the layer to import, all layers if None
+        where: SQL where clause used to filter the imported features
+    """
     if aoi_map:
-        grass.run_command("g.region", vector=aoi_map, quiet=True)
-    out_tempall = list()
-    for shape_file in shape_files:
-        grass.message(_(f"Importing {shape_file}"))
-        out_temp = (
-            f"out_temp_{PID}_"
-            f"{os.path.splitext(os.path.basename(shape_file))[0]}"
-        )
+        gs.run_command("g.region", vector=aoi_map, quiet=True)
+    out_tempall = []
+    for i, shape_file in enumerate(shape_files):
+        gs.message(_("Importing {}...").format(shape_file))
+        # NRW district names contain characters that GRASS map names do not allow
+        out_temp = f"out_temp_{PID}_{i}"
         rm_vectors.append(out_temp)
-        grass.run_command(
+        gs.run_command(
             "v.import",
             input=shape_file,
             output=out_temp,
-            layer=layer,  #
+            layer=layer,
             extent="region",
             quiet=True,
         )
         if where:
             out_filtered = f"{out_temp}_filtered"
             rm_vectors.append(out_filtered)
-            grass.run_command(
+            gs.run_command(
                 "v.extract",
                 input=out_temp,
                 where=where,
@@ -545,22 +568,22 @@ def import_shapefiles(
         change_col_text_type(out_temp)
         column_list = {
             col.split("|")[1]: col.split("|")[0]
-            for col in grass.parse_command("v.info", map=out_temp, flags="cg")
+            for col in gs.parse_command("v.info", map=out_temp, flags="cg")
         }
         drop_columns = [
             el
             for el in column_list
             if el
-            not in [
+            not in {
                 "cat",
                 "aktualit",
                 "gebnutzbez",
                 "funktion",
                 "anzahlgs",
                 "lagebeztxt",
-            ]
+            }
         ]
-        grass.run_command(
+        gs.run_command(
             "v.db.dropcolumn",
             map=out_temp,
             columns=drop_columns,
@@ -571,7 +594,7 @@ def import_shapefiles(
         out = OUTPUT_ALKIS_TEMP
     patch_vector(out_tempall, out)
     if aoi_map:
-        grass.run_command(
+        gs.run_command(
             "v.clip",
             input=OUTPUT_ALKIS_TEMP,
             clip=aoi_map,
@@ -581,11 +604,13 @@ def import_shapefiles(
         )
 
 
-def patch_vector(vector_list, output):
+def patch_vector(vector_list, output) -> None:
     """Patch vectors from several federal states into one vector."""
+    if not vector_list:
+        gs.fatal(_("No ALKIS building data found for the requested area."))
     # patch output from several federal states
     if len(vector_list) > 1:
-        grass.run_command(
+        gs.run_command(
             "v.patch",
             input=vector_list,
             output=output,
@@ -593,11 +618,11 @@ def patch_vector(vector_list, output):
             quiet=True,
         )
     else:
-        grass.run_command("g.rename", vector=f"{vector_list[0]},{output}")
+        gs.run_command("g.rename", vector=f"{vector_list[0]},{output}")
 
 
 def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
-    """Import of data from local file path
+    """Import data from a local file path.
 
     Args:
         aoi_map (str): name of vector map defining AOI
@@ -607,28 +632,25 @@ def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
 
     Returns:
         imported_local_data (bool): True if local data imported, otherwise False
+
     """
     imported_local_data = False
     # get files (GPKG or SHP)
-    buildings_files = glob.glob(
-        os.path.join(local_data_dir, fs, "**", "*.gpkg"),
-        recursive=True,
-    )
-    shp_files = glob.glob(
-        os.path.join(local_data_dir, fs, "**", "*.shp"), recursive=True
-    )
+    fs_dir = pathlib.Path(local_data_dir) / fs
+    buildings_files = list(fs_dir.rglob("*.gpkg"))
+    shp_files = list(fs_dir.rglob("*.shp"))
     buildings_files.extend(shp_files)
 
     # import data for AOI
     imported_buildings_list = []
     for i, buildings_file in enumerate(buildings_files):
         if aoi_map:
-            grass.run_command(
+            gs.run_command(
                 "g.region",
                 vector=aoi_map,
                 quiet=True,
             )
-        grass.run_command(
+        gs.run_command(
             "v.import",
             input=buildings_file,
             output=f"{output_alkis_fs}_{i}",
@@ -642,19 +664,19 @@ def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
     patch_vector(imported_buildings_list, output_alkis_fs)
 
     # check if result is not empty
-    buildings_info = grass.parse_command(
+    buildings_info = gs.parse_command(
         "v.info",
         map=output_alkis_fs,
         flags="gt",
     )
-    if int(buildings_info["centroids"]) == 0 and fs in ["BW"]:
-        grass.fatal(_("Local data does not overlap with AOI."))
+    if int(buildings_info["centroids"]) == 0 and fs == "BW":
+        gs.fatal(_("Local data does not overlap with AOI."))
     elif int(buildings_info["centroids"]) == 0:
-        grass.message(
+        gs.message(
             _(
                 "Local data does not overlap with AOI. Data will be downloaded"
-                "from Open Data portal."
-            )
+                " from Open Data portal.",
+            ),
         )
     else:
         imported_local_data = True
@@ -662,32 +684,41 @@ def import_local_data(aoi_map, local_data_dir, fs, output_alkis_fs):
     return imported_local_data
 
 
-def cleanup_columns(out_alkis):
-    """Remove additional columns"""
-    cols = grass.vector_columns(out_alkis)
-    rm_cols = []
-    for col in cols:
-        if col not in ["cat", "AGS_0", "OI", "GFK"]:
-            rm_cols.append(col)
-    for needed_col in ["AGS_0", "OI", "GFK"]:
+def cleanup_columns(out_alkis) -> None:
+    """Remove additional columns and normalize the ALKIS columns to TEXT."""
+    cols = gs.vector_columns(out_alkis)
+    # The source data is inconsistent: NRW provides AGS_0, the other federal
+    # states AGS, and Hessen uses lower case names. Match case insensitively
+    # and recreate the columns under the canonical names, because SQLite
+    # treats column names case insensitively and would reject the duplicates.
+    lowered = {col.lower(): col for col in cols}
+    ags_col = "AGS_0" if "ags_0" in lowered else "AGS"
+
+    rm_cols = [
+        col
+        for col in cols
+        if col.lower() not in {"cat", "ags", "ags_0", "oi", "gfk"}
+    ]
+    for needed_col in [ags_col, "OI", "GFK"]:
+        existing = lowered.get(needed_col.lower())
         tmp_col = None
-        if needed_col in cols:
-            tmp_col = f"{needed_col}_tmp"
+        if existing:
+            tmp_col = f"{existing}_tmp"
             rm_cols.append(tmp_col)
-            grass.run_command(
+            gs.run_command(
                 "v.db.renamecolumn",
                 map=out_alkis,
-                column=f"{needed_col},{tmp_col}",
+                column=f"{existing},{tmp_col}",
                 quiet=True,
             )
-        grass.run_command(
+        gs.run_command(
             "v.db.addcolumn",
             map=out_alkis,
             columns=f"{needed_col} TEXT",
             quiet=True,
         )
         if tmp_col:
-            grass.run_command(
+            gs.run_command(
                 "v.db.update",
                 map=out_alkis,
                 column=needed_col,
@@ -695,7 +726,7 @@ def cleanup_columns(out_alkis):
                 quiet=True,
             )
     if len(rm_cols) > 0:
-        grass.run_command(
+        gs.run_command(
             "v.db.dropcolumn",
             map=out_alkis,
             columns=rm_cols,
@@ -703,8 +734,8 @@ def cleanup_columns(out_alkis):
         )
 
 
-def main():
-    """main function for processing"""
+def main() -> None:
+    """Process the requested ALKIS import."""
     global DLDIR, ORIG_REGION, OUTPUT_ALKIS_TEMP, PID
     PID = os.getpid()
 
@@ -720,36 +751,46 @@ def main():
 
     # temp download path, if not explicit path given
     if not DLDIR:
-        DLDIR = grass.tempdir()
-    else:
-        if not os.path.exists(DLDIR):
-            grass.message(
-                _(f"Download folder {DLDIR} does not exist. Creating it...")
-            )
-            os.makedirs(DLDIR)
+        DLDIR = gs.tempdir()
+    elif not pathlib.Path(DLDIR).exists():
+        gs.message(
+            _("Download folder {} does not exist. Creating it...").format(
+                DLDIR,
+            ),
+        )
+        pathlib.Path(DLDIR).mkdir(parents=True)
 
     # get federal state
     if file_federal_state:
-        with open(file_federal_state) as file:
-            federal_states = file.read().strip()
+        federal_states = (
+            pathlib.Path(file_federal_state)
+            .read_text(
+                encoding="utf-8",
+            )
+            .strip()
+        )
     else:
         federal_states = options["federal_state"].strip()
 
     # get list of local input folders for federal states
     local_fs_list = []
-    if local_data_dir and local_data_dir != "":
-        local_fs_list = os.listdir(local_data_dir)
+    if local_data_dir:
+        local_fs_list = [
+            p.name for p in pathlib.Path(local_data_dir).iterdir()
+        ]
 
     # region
     ORIG_REGION = f"ORIG_REGION{PID}"
     # save current region for setting back later in cleanup
-    grass.run_command("g.region", save=ORIG_REGION, quiet=True)
+    gs.run_command("g.region", save=ORIG_REGION, quiet=True)
 
     # loop over federal state and import data
     output_alkis_list = []
     for federal_state in federal_states.split(","):
         if federal_state not in FS_ABBREVIATION:
-            grass.fatal(_(f"Non valid name of federal state: {federal_state}"))
+            gs.fatal(
+                _("Non valid name of federal state: {}").format(federal_state),
+            )
         fs = FS_ABBREVIATION[federal_state]
         output_alkis_fs = f"{output_alkis}_{fs}"
         output_alkis_list.append(output_alkis_fs)
@@ -759,26 +800,33 @@ def main():
         imported_local_data = False
         if fs in local_fs_list:
             imported_local_data = import_local_data(
-                aoi_map, local_data_dir, fs, output_alkis_fs
+                aoi_map,
+                local_data_dir,
+                fs,
+                output_alkis_fs,
             )
-        elif fs in ["BW"]:
-            grass.fatal(
-                _(f"No local data for {fs} available. Is the path correct?")
+        elif fs == "BW":
+            gs.fatal(
+                _(
+                    "No local data for {} available. Is the path correct?",
+                ).format(fs),
             )
 
         # check if federal state is supported
         if not imported_local_data:
-            if fs in ["NW", "BE", "HE", "TH", "SN"]:
+            if fs in {"NW", "BE", "HE", "TH", "SN"}:
                 url = URLS[fs]
-            elif fs in ["BB"]:
+            elif fs == "BB":
                 pass
             else:
-                grass.warning(_(f"Support for {fs} is not yet implemented."))
+                gs.warning(
+                    _("Support for {} is not yet implemented.").format(fs),
+                )
 
             # so far, just Berlin, Brandenburg, Hessen, NRW and Sachsen are implemented;
             # in case single federal state given, and not NRW:
             #   skips following part
-            #   + grass.message: see above
+            #   + gs.message: see above
             # in case multiple federal states given, and at least one of them is NRW:
             #   import data only for NRW area
             if fs == "NW":
@@ -789,7 +837,7 @@ def main():
                 alkis_source = download_alkis_buildings(fs, url)
 
             # import to GRASS DB
-            grass.message((f"Importing ALKIS buildings data  ({fs})..."))
+            gs.message(_("Importing ALKIS buildings data ({})...").format(fs))
             if isinstance(alkis_source, str):
                 import_single_alkis_source(
                     alkis_source,
@@ -820,10 +868,12 @@ def main():
     # patch output from several federal states
     patch_vector(output_alkis_list, output_alkis)
 
-    grass.message(_(f"Importing ALKIS buildings data <{output_alkis}> done."))
+    gs.message(
+        _("Importing ALKIS buildings data <{}> done.").format(output_alkis),
+    )
 
 
 if __name__ == "__main__":
-    options, flags = grass.parser()
+    options, flags = gs.parser()
     atexit.register(cleanup)
     main()
